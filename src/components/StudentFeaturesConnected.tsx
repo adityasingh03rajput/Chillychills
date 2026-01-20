@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Gift, Send, Copy, Star, Users, Award, CreditCard, User, Loader2, Heart, Share2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { api } from '../utils/api';
 
 // --- MODAL WRAPPER ---

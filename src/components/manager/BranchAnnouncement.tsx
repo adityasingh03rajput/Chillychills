@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, X, Megaphone } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface BranchAnnouncementProps {
   currentAnnouncement: string;

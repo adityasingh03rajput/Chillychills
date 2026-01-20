@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Tag, Plus, X, Trash2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface CategoryManagerProps {
   categories: string[];

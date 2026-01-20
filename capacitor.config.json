@@ -1,0 +1,9 @@
+{
+  "appId": "com.chillychills.app",
+  "appName": "Chillychills",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "com.chillychills.app"
+  }
+}

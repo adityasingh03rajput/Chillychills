@@ -12,6 +12,7 @@ export interface MenuItem {
   description: string;
   isPackaged?: boolean; // Determines if auto-refundable
   isRefundable?: boolean; // Manager sets this - if item is refundable when user cancels
+  branch: string; // 'A', 'B', 'C', or 'All'
 }
 
 export interface CartItem extends MenuItem {

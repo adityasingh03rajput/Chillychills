@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Gift, Send, Copy, Star, Users, Award, CreditCard } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 // --- MODAL WRAPPER ---
 export const FeatureModal = ({ isOpen, onClose, title, children }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }) => {

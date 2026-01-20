@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trash2, X, AlertTriangle } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface DeleteMenuItemProps {
   itemId: string;

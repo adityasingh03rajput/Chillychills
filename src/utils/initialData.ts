@@ -10,7 +10,8 @@ export const INITIAL_MENU: MenuItem[] = [
     available: true,
     isDailySpecial: true,
     description: 'Juicy beef patty with cheddar cheese and fresh lettuce.',
-    isRefundable: false // Prepared fresh, non-refundable
+    isRefundable: false, // Prepared fresh, non-refundable
+    branch: 'A'
   },
   {
     id: 'm2',
@@ -21,7 +22,8 @@ export const INITIAL_MENU: MenuItem[] = [
     available: true,
     isDailySpecial: false,
     description: 'Flaky, buttery, and freshly baked every morning.',
-    isRefundable: false // Baked fresh, non-refundable
+    isRefundable: false, // Baked fresh, non-refundable
+    branch: 'B'
   },
   {
     id: 'm3',
@@ -32,7 +34,8 @@ export const INITIAL_MENU: MenuItem[] = [
     available: true,
     isDailySpecial: false,
     description: 'Golden salted fries, perfect for sharing.',
-    isRefundable: false // Prepared fresh, non-refundable
+    isRefundable: false, // Prepared fresh, non-refundable
+    branch: 'C'
   },
   {
     id: 'm4',
@@ -43,7 +46,8 @@ export const INITIAL_MENU: MenuItem[] = [
     available: true,
     isDailySpecial: false,
     description: 'Ice cold refreshing cola.',
-    isRefundable: true // Packaged drink, refundable
+    isRefundable: true, // Packaged drink, refundable
+    branch: 'All'
   },
   {
     id: 'm5',
@@ -54,6 +58,7 @@ export const INITIAL_MENU: MenuItem[] = [
     available: true,
     isDailySpecial: false,
     description: 'Decadent chocolate layer cake.',
-    isRefundable: true // Pre-made dessert, refundable
+    isRefundable: true, // Pre-made dessert, refundable
+    branch: 'A'
   }
 ];

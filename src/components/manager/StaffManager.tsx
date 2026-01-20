@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Users, Plus, X, Trash2, AlertTriangle, Shield } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface Staff {
   id: string;

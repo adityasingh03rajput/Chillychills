@@ -144,59 +144,76 @@ export default function App() {
     };
     initDeepLinks();
 
+    // Handle Online/Offline Status
+    const handleOnline = () => toast.success('Back online! Reconnecting kitchen...', { id: 'network' });
+    const handleOffline = () => toast.error('You are offline. Orders may not update.', { id: 'network', duration: Infinity });
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
       authListener.subscription.unsubscribe();
     };
   }, []);
 
-  // Separate Order Polling with proper dependencies
+  // Realtime Order Connection (Better than polling)
   useEffect(() => {
     if (!role) return;
 
-    let errorShown = false;
-
+    // Initial Fetch
     const fetchOrders = async () => {
       try {
         const ordersData = await api.getOrders();
-        if (ordersData) {
-          // Debug logs for user to verify branches
-          console.log(`[Orders] Fetched ${ordersData.length} orders total.`);
-          if (ordersData.length > 0) {
-            const branchCounts = ordersData.reduce((acc: any, o) => {
-              acc[o.branch] = (acc[o.branch] || 0) + 1;
-              return acc;
-            }, {});
-            console.log(`[Orders] Branch distribution:`, branchCounts);
-          }
-
-          // Check for notifications before updating state
-          if (role === 'cook' || role === 'manager') {
-            const newOrders = ordersData.filter(newO =>
-              newO.status === 'placed' && !orders.some(oldO => oldO.id === newO.id)
-            );
-            if (newOrders.length > 0) {
-              sendLocalNotification(
-                "New Order!",
-                `You have ${newOrders.length} new order(s) waiting.`,
-                201
-              );
-            }
-          }
-          setOrders(ordersData);
-        }
-      } catch (e: any) {
-        console.error('Failed to fetch orders:', e);
-        if (!errorShown) {
-          toast.error('Kitchen connection unstable. Retrying...');
-          errorShown = true;
-        }
+        if (ordersData) setOrders(ordersData);
+      } catch (e) {
+        console.error('Failed to initial fetch:', e);
       }
     };
-
     fetchOrders();
-    const interval = setInterval(fetchOrders, 4000); // 4s polling
-    return () => clearInterval(interval);
-  }, [role, orders.length]); // Re-poll when role changes or order count changes
+
+    // Setup Supabase Realtime Subscription
+    const channel = supabase
+      .channel('orders-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        async (payload) => {
+          console.log('[Realtime] Order Change Detected:', payload.eventType);
+
+          // Refresh list to ensuring everything is sync
+          const ordersData = await api.getOrders();
+          if (ordersData) {
+            // Handle notifications for staff
+            if (role === 'cook' || role === 'manager') {
+              const newOrders = ordersData.filter(newO =>
+                newO.status === 'placed' && !orders.some(oldO => oldO.id === newO.id)
+              );
+              if (newOrders.length > 0) {
+                sendLocalNotification("New Order!", `You have ${newOrders.length} new order(s).`, 201);
+                toast.info("🛎️ New order received!");
+              }
+            }
+            setOrders(ordersData);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Successfully connected to Kitchen stream');
+        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          console.error('[Realtime] Connection lost, falling back to polling safely');
+        }
+      });
+
+    // Fallback polling (slower, just in case realtime fails)
+    const fallback = setInterval(fetchOrders, 10000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(fallback);
+    };
+  }, [role, orders.length]);
 
   const handleLogin = (selectedRole: string) => {
     setRole(selectedRole);

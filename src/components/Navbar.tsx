@@ -1,45 +1,72 @@
-import { Home, UtensilsCrossed, ShoppingBag, Clock } from 'lucide-react';
+import { Home, UtensilsCrossed, ShoppingBag, Clock, LayoutGrid } from 'lucide-react';
 import { motion } from 'motion/react';
 
-export const Navbar = ({ activeTab, onTabChange, cartCount }: any) => {
+interface NavbarProps {
+  activeTab: string;
+  onTabChange: (id: string) => void;
+  cartCount?: number;
+}
+
+export const Navbar = ({ activeTab, onTabChange, cartCount }: NavbarProps) => {
   const tabs = [
-    { id: 'home', icon: Home, label: 'Home' },
-    { id: 'menu', icon: UtensilsCrossed, label: 'Menu' },
-    { id: 'cart', icon: ShoppingBag, label: 'Cart', badge: cartCount },
-    { id: 'orders', icon: Clock, label: 'Orders' },
+    { id: 'home', icon: LayoutGrid, label: 'Feed' },
+    { id: 'menu', icon: UtensilsCrossed, label: 'Vault' },
+    { id: 'cart', icon: ShoppingBag, label: 'Tray', badge: cartCount },
+    { id: 'orders', icon: Clock, label: 'Logs' },
   ];
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-50 px-4 pb-6 ios-safe-area pointer-events-none">
-      <div className="bg-[#1a1410]/80 backdrop-blur-2xl border border-white/10 p-2 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto">
-        <div className="flex justify-around items-center relative">
-          {tabs.map((tab) => (
+    <div className="absolute bottom-0 left-0 right-0 z-50 px-4 pb-[calc(var(--safe-area-bottom)+1.5rem)] pointer-events-none">
+      <div className="premium-glass w-full max-w-[440px] mx-auto p-1.5 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.4)] pointer-events-auto flex justify-around items-center h-[4.5rem] border border-white/10 relative overflow-hidden">
+
+        {/* Modern Blur Accent */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[var(--accent-orange)]/5 to-transparent opacity-50" />
+
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`relative flex flex-col items-center p-3 w-16 transition-all duration-300 active-shrink tap-highlight-none z-10 ${activeTab === tab.id ? 'text-[#FF7A2F]' : 'text-white/40'}`}
+              onClick={() => {
+                if (window.navigator.vibrate) window.navigator.vibrate(5);
+                onTabChange(tab.id);
+              }}
+              className={`relative flex-1 flex flex-col items-center justify-center h-full rounded-[1.8rem] transition-all duration-500 ${isActive ? 'text-[var(--accent-orange)]' : 'text-[var(--text-muted)] opacity-50 hover:opacity-100'}`}
             >
-              {activeTab === tab.id && (
+              {isActive && (
                 <motion.div
-                  layoutId="navbar-pill"
-                  className="absolute inset-0 bg-white/5 rounded-2xl border border-white/5"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                  layoutId="navbar-glow"
+                  className="absolute inset-1 bg-[var(--accent-orange)]/10 rounded-[1.5rem] shadow-inner"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
-              <tab.icon className={`w-6 h-6 mb-1 ${activeTab === tab.id ? 'fill-[#FF7A2F]/10' : ''}`} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-              <span className="text-[10px] font-black uppercase tracking-wider">{tab.label}</span>
-              {tab.badge > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute top-1 right-2 bg-[#FF7A2F] text-white text-[9px] font-black px-1.5 h-4 min-w-[16px] flex items-center justify-center rounded-full shadow-lg border-2 border-[#1a1410]"
-                >
-                  {tab.badge}
-                </motion.span>
+
+              <div className="relative z-10">
+                <tab.icon size={22} strokeWidth={isActive ? 3 : 2} className="transition-transform duration-500" />
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-3 -right-3 bg-[var(--accent-orange)] text-white text-[9px] font-bold min-w-[20px] h-[20px] flex items-center justify-center rounded-full shadow-lg border-[1.5px] border-[var(--card-bg)]"
+                  >
+                    {tab.badge}
+                  </motion.span>
+                )}
+              </div>
+
+              <span className={`text-[8px] font-black uppercase tracking-[0.25em] mt-1.5 transition-all duration-500 z-10 ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-50 h-0 hidden'}`}>
+                {tab.label}
+              </span>
+
+              {isActive && (
+                <motion.div
+                  layoutId="navbar-dot"
+                  className="absolute bottom-1.5 w-1 h-1 bg-[var(--accent-orange)] rounded-full shadow-[0_0_10px_var(--accent-orange)] z-10"
+                />
               )}
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );

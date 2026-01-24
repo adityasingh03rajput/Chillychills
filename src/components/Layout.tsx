@@ -2,22 +2,31 @@ import React from 'react';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="min-h-screen w-full bg-stone-900 flex justify-center overflow-hidden relative font-sans text-stone-100">
-      <style>{`
-         @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
-         .font-brand { font-family: 'Pacifico', cursive; }
-       `}</style>
-      {/* Background Image with Blur */}
-      <div
-        className="absolute inset-0 z-0 opacity-40 bg-cover bg-center blur-sm scale-110"
-        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1754380630120-35eeee7fcc06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080')` }}
-      />
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#4A2E1E]/80 to-[#1A1A1A]/90 mix-blend-multiply" />
+    <div className="fixed inset-0 w-full h-full bg-[var(--bg-primary)] selection:bg-[var(--accent-orange)]/30 overflow-hidden flex justify-center">
+      {/* Immersive Background Shell (Global) */}
+      <div className="fixed inset-0 z-0 bg-black" />
 
-      {/* Mobile Container */}
-      <div className="w-full max-w-md h-[100dvh] relative z-10 bg-[#FAFAF7]/5 backdrop-blur-md shadow-2xl flex flex-col overflow-y-auto border-x border-white/10 sm:rounded-3xl sm:my-4 sm:h-[calc(100vh-2rem)] ios-safe-area">
-        {children}
+      {/* Dynamic Ambient Gradient Flows (Global Background) */}
+      <div className="fixed top-[-10%] left-[-20%] w-[140%] h-[140%] z-0 pointer-events-none opacity-40 overflow-hidden">
+        <div className="absolute top-0 left-0 w-[60%] h-[60%] bg-[var(--accent-orange)] rounded-full blur-[160px] animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-[20%] right-[10%] w-[50%] h-[50%] bg-[var(--accent-green)] rounded-full blur-[140px] animate-pulse" style={{ animationDuration: '12s', animationDelay: '2s' }} />
+        <div className="absolute top-[30%] right-[20%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-[120px]" />
       </div>
+
+      {/* Noise Texture Overlay */}
+      <div className="fixed inset-0 z-[1] pointer-events-none opacity-[0.05] mix-blend-overlay"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+      />
+
+      {/* The Central Mobile Shell - Constraint for larger screens, fluid for mobile */}
+      <div className="mobile-shell z-20">
+        <main className="relative flex-1 flex flex-col pt-safe overflow-hidden">
+          {children}
+        </main>
+      </div>
+
+      {/* Persistent Visual Vignette */}
+      <div className="fixed inset-0 pointer-events-none z-[100] bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.2)_100%)] opacity-50" />
     </div>
   );
 };

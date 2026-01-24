@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Layout } from './components/Layout';
 import { LoginScreen } from './screens/LoginScreen';
-import { StudentHome } from './screens/StudentHome';
 import { StudentHomeWithFeatures } from './screens/StudentHomeWithFeatures';
 import { MenuScreen } from './screens/MenuScreen';
 import { CartScreen } from './screens/CartScreen';
 import { OrdersScreen } from './screens/OrdersScreen';
-import { StaffDashboard } from './screens/StaffDashboard';
-import { ManagerDashboard } from './screens/ManagerDashboard';
 import { Navbar } from './components/Navbar';
 import { api } from './utils/api';
 import { INITIAL_MENU } from './utils/initialData';
@@ -16,6 +13,17 @@ import { MenuItem, CartItem, Order, Feedback } from './utils/types';
 import { Toaster, toast } from 'sonner';
 import { supabase } from './utils/supabase/client';
 import { initNotifications, sendLocalNotification } from './utils/notifications';
+import { Loader2 } from 'lucide-react';
+
+// Lazy load dashboards for performance
+const StaffDashboard = lazy(() => import('./screens/StaffDashboard').then(m => ({ default: m.StaffDashboard })));
+const ManagerDashboard = lazy(() => import('./screens/ManagerDashboard').then(m => ({ default: m.ManagerDashboard })));
+
+const ScreenLoader = () => (
+  <div className="flex h-screen w-screen items-center justify-center bg-[var(--bg-primary)]">
+    <Loader2 className="h-10 w-10 animate-spin text-[var(--accent-orange)]" />
+  </div>
+);
 
 export default function App() {
   const [role, setRole] = useState<string | null>(null);
@@ -30,496 +38,368 @@ export default function App() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [branchPaused, setBranchPaused] = useState(false);
 
-  // Initial Load & Auth Check
+  const placingOrderRef = useRef(false);
+
+  // Initialize App
   useEffect(() => {
     const init = async () => {
-      // Initialize Push/Local Notifications
       await initNotifications().catch(() => { });
 
       try {
-        // First, check localStorage for persisted session
-        const persistedSession = localStorage.getItem('chilly_user_session');
-        if (persistedSession) {
-          try {
-            const { role: savedRole, userId: savedUserId } = JSON.parse(persistedSession);
-            setRole(savedRole);
-            setUserId(savedUserId);
-            if (savedRole === 'student') setActiveTab('home');
-          } catch (e) {
-            console.log('Failed to restore session from localStorage', e);
-          }
+        const persisted = localStorage.getItem('chilly_user_session');
+        if (persisted) {
+          const { role: r, userId: id } = JSON.parse(persisted);
+          setRole(r);
+          setUserId(id);
+          if (r === 'student') setActiveTab('home');
         }
 
-        // Then check Supabase session
-        try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-
-          // If there's an auth error (like unconfirmed email), clear the session
-          if (error) {
-            console.log('Auth session error, clearing:', error.message);
-            await supabase.auth.signOut();
-            localStorage.removeItem('chilly_user_session');
-            setRole(null);
-          } else if (session) {
-            const userRole = session.user.user_metadata?.role || 'student';
-            const newUserId = session.user.id || 'user_123';
-            setRole(userRole);
-            setUserId(newUserId);
-            // Persist to localStorage
-            localStorage.setItem('chilly_user_session', JSON.stringify({ role: userRole, userId: newUserId }));
-            if (userRole === 'student') setActiveTab('home');
-          }
-        } catch (authError: any) {
-          console.log('Auth error during session check:', authError.message);
-          // Clear any problematic session
-          await supabase.auth.signOut().catch(() => { });
-          localStorage.removeItem('chilly_user_session');
-          setRole(null);
-        }
-
-        let menuData = [];
-        try {
-          menuData = await api.getMenu();
-        } catch (e) { console.log('Menu fetch error', e); }
-
-        if (!menuData || menuData.length === 0) {
-          console.log('Seeding menu...');
+        const menuData = await api.getMenu();
+        if (menuData && menuData.length > 0) setMenu(menuData);
+        else {
           await api.seedMenu(INITIAL_MENU);
-          menuData = INITIAL_MENU;
+          setMenu(INITIAL_MENU);
         }
-        setMenu(menuData);
-      } catch (e) {
-        console.error('Init error:', e);
+      } catch (err) {
+        console.error('Initial load failed:', err);
       } finally {
         setLoading(false);
       }
     };
     init();
 
-    // Listen for Auth Changes (Redirects from Google, etc.)
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        let userRole = session.user.user_metadata?.role || 'student';
-        const newUserId = session.user.id;
-
-        // Force 'student' role for Google OAuth users
-        const isGoogleUser = session.user.app_metadata.provider === 'google';
-        if (isGoogleUser) {
-          userRole = 'student';
-          console.log('[Auth] Google Login detected - Forcing Student Role');
-        }
-
+        const userRole = session.user.app_metadata.provider === 'google' ? 'student' : (session.user.user_metadata?.role || 'student');
         setRole(userRole);
-        setUserId(newUserId);
-        localStorage.setItem('chilly_user_session', JSON.stringify({ role: userRole, userId: newUserId }));
-
+        setUserId(session.user.id);
+        localStorage.setItem('chilly_user_session', JSON.stringify({ role: userRole, userId: session.user.id }));
         if (userRole === 'student') setActiveTab('home');
-        toast.success(`Logged in as ${userRole}`);
       } else if (event === 'SIGNED_OUT') {
         setRole(null);
         localStorage.removeItem('chilly_user_session');
       }
     });
 
-    // Handle Capacitor Deep Links (Android/iOS)
-    const initDeepLinks = async () => {
-      if ((window as any).Capacitor) {
-        const { App: CapApp } = await import('@capacitor/app');
-        CapApp.addListener('appUrlOpen', async (data: any) => {
-          const url = new URL(data.url);
-          const hash = url.hash.substring(1);
-          if (hash) {
-            const params = new URLSearchParams(hash);
-            const accessToken = params.get('access_token');
-            const refreshToken = params.get('refresh_token');
-            if (accessToken && refreshToken) {
-              await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken
-              });
-            }
-          }
-        });
-      }
-    };
-    initDeepLinks();
-
-    // Handle Online/Offline Status
-    const handleOnline = () => toast.success('Back online! Reconnecting kitchen...', { id: 'network' });
-    const handleOffline = () => toast.error('You are offline. Orders may not update.', { id: 'network', duration: Infinity });
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      authListener.subscription.unsubscribe();
-    };
+    return () => authListener.subscription.unsubscribe();
   }, []);
 
-  // Realtime Order Connection (Better than polling)
+  // Realtime Orders with Enhanced Connection Handling
   useEffect(() => {
     if (!role) return;
 
-    // Initial Fetch
+    let isSubscribed = true;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    let pollingInterval: NodeJS.Timeout | null = null;
+    let previousOrderIds = new Set<string>();
+
     const fetchOrders = async () => {
+      if (!isSubscribed) return;
+
       try {
-        const ordersData = await api.getOrders();
-        if (ordersData) setOrders(ordersData);
+        const data = await api.getOrders();
+        if (data && isSubscribed) {
+          setOrders(data);
+          reconnectAttempts = 0; // Reset on successful fetch
+
+          // Update previousOrderIds for notification logic
+          previousOrderIds = new Set(data.map(o => o.id));
+        }
       } catch (e) {
-        console.error('Failed to initial fetch:', e);
+        console.error('Orders fetch failed:', e);
+
+        // Exponential backoff for retries
+        if (reconnectAttempts < maxReconnectAttempts) {
+          reconnectAttempts++;
+          const backoffTime = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+          console.log(`Retrying in ${backoffTime}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+          setTimeout(() => isSubscribed && fetchOrders(), backoffTime);
+        }
       }
     };
+
+    // Initial fetch
     fetchOrders();
 
-    // Setup Supabase Realtime Subscription
+    // Setup Supabase realtime channel - simplified config for postgres_changes
     const channel = supabase
-      .channel('orders-db-changes')
-      .on(
-        'postgres_changes',
+      .channel('orders-realtime-' + Date.now()) // Unique channel name
+      .on('postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         async (payload) => {
-          console.log('[Realtime] Order Change Detected:', payload.eventType);
+          if (!isSubscribed) return;
 
-          // Refresh list to ensuring everything is sync
-          const ordersData = await api.getOrders();
-          if (ordersData) {
-            // Handle notifications for staff
-            if (role === 'cook' || role === 'manager') {
-              const newOrders = ordersData.filter(newO =>
-                newO.status === 'placed' && !orders.some(oldO => oldO.id === newO.id)
-              );
-              if (newOrders.length > 0) {
-                sendLocalNotification("New Order!", `You have ${newOrders.length} new order(s).`, 201);
-                toast.info("🛎️ New order received!");
+          console.log('📡 Realtime event received:', payload.eventType, payload);
+
+          try {
+            const data = await api.getOrders();
+            if (data && isSubscribed) {
+              // Check for new orders using previousOrderIds instead of stale closure
+              const newOrders = data.filter(n => n.status === 'placed' && !previousOrderIds.has(n.id));
+
+              if ((role === 'cook' || role === 'manager') && newOrders.length > 0) {
+                toast.info(`🛎️ ${newOrders.length} new order${newOrders.length > 1 ? 's' : ''} received!`);
+                if (window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
               }
+
+              setOrders(data);
+              previousOrderIds = new Set(data.map(o => o.id));
             }
-            setOrders(ordersData);
+          } catch (error) {
+            console.error('Error handling realtime update:', error);
           }
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Realtime] Successfully connected to Kitchen stream');
-        } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-          console.error('[Realtime] Connection lost, falling back to polling safely');
+      .subscribe((status, err) => {
+        if (err) {
+          console.error('❌ Supabase subscription error:', err);
         }
+        console.log('🔌 Supabase channel status:', status);
       });
 
-    // Fallback polling (slower, just in case realtime fails)
-    const fallback = setInterval(fetchOrders, 10000);
+    // Optimized polling based on role - increased frequency
+    const pollingIntervalTime = (role === 'cook' || role === 'manager') ? 10000 : 30000;
+    pollingInterval = setInterval(fetchOrders, pollingIntervalTime);
 
+    // Cleanup function
     return () => {
-      supabase.removeChannel(channel);
-      clearInterval(fallback);
+      isSubscribed = false;
+      if (pollingInterval) clearInterval(pollingInterval);
+
+      supabase.removeChannel(channel).then(() => {
+        console.log('✅ Channel cleanup complete');
+      }).catch((err) => {
+        console.error('Error during channel cleanup:', err);
+      });
     };
-  }, [role, orders.length]);
+  }, [role]);
 
   const handleLogin = (selectedRole: string) => {
     setRole(selectedRole);
-    setUserId(userId); // Keep existing userId
-    // Persist session to localStorage
     localStorage.setItem('chilly_user_session', JSON.stringify({ role: selectedRole, userId }));
     if (selectedRole === 'student') setActiveTab('home');
   };
 
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.log('Sign out error:', e);
-    }
-    // Clear localStorage session
+    await supabase.auth.signOut().catch(() => { });
     localStorage.removeItem('chilly_user_session');
     setRole(null);
-    setUserId('user_123');
     setCart([]);
-    setActiveTab('home');
-    toast.info('Logged out successfully');
-  };
-
-  // Calculate refund amount based on item refundability and who cancelled
-  const calculateRefundAmount = (order: Order, cancelledBy: 'user' | 'staff'): number => {
-    if (cancelledBy === 'staff') {
-      // Staff cancelled: refund everything
-      return order.totalAmount;
-    } else {
-      // User cancelled: only refund refundable items
-      const refundableTotal = order.items.reduce((sum, item) => {
-        if (item.isRefundable) {
-          return sum + (item.price * item.quantity);
-        }
-        return sum;
-      }, 0);
-      return refundableTotal;
-    }
+    toast.info('Session Ended');
   };
 
   const addToCart = (item: MenuItem) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
-      if (existing) {
-        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
-      }
+      if (existing) return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
       return [...prev, { ...item, quantity: 1 }];
     });
-    toast.success(`Added ${item.name} to tray`);
+    toast.success(`Tray Updated: ${item.name}`);
   };
 
-  const updateQuantity = (id: string, qty: number) => {
-    if (qty < 1) {
-      setCart(prev => prev.filter(i => i.id !== id));
-    } else {
-      setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: qty } : i));
-    }
-  };
-
-  // Ref to track execution status synchronously
-  const placingOrderRef = React.useRef(false);
-
-  const placeOrder = async (orderDetails: any) => {
-    if (cart.length === 0) return;
-
-    // Prevent multiple submissions synchronously
+  const placeOrder = async (details: any) => {
     if (placingOrderRef.current) return;
     placingOrderRef.current = true;
-
     setIsPlacingOrder(true);
 
-    // Generate Token: Branch + Random Number
     const token = `${branch || 'A'}${Math.floor(Math.random() * 900) + 100}`;
+    const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
-    const newOrder: Partial<Order> = {
+    const newOrder = {
+      id: `temp-${Date.now()}`,
       items: cart,
-      totalAmount: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0),
+      totalAmount: total,
       token,
       branch: branch || 'A',
-      userId: userId, // Mock user
-      ...orderDetails
+      userId,
+      status: 'placed' as const,
+      createdAt: Date.now(),
+      ...details
     };
 
+    // Optimistic update - instantly clear cart and switch tab
+    setCart([]);
+    setActiveTab('orders');
+    toast.success(`Order Placed! Token: ${token}`);
+
+    // Add order to local state immediately
+    setOrders(prev => [...prev, newOrder as any]);
+
     try {
-      await new Promise(r => setTimeout(r, 1500));
-      const created = await api.createOrder(newOrder);
-      setOrders(prev => [...prev, created]);
-      setCart([]);
-      setActiveTab('orders');
-      toast.success(`Order Placed! Token: ${token}`);
-      sendLocalNotification("Order Placed", `Your order #${token} has been placed successfully.`, 101);
+      // API call in background
+      const createdOrder = await api.createOrder({ items: cart.length > 0 ? cart : newOrder.items, totalAmount: total, token, branch: branch || 'A', userId, ...details });
+
+      // Replace temp order with real one from server
+      setOrders(prev => prev.map(o => o.id === newOrder.id ? createdOrder : o));
     } catch (e) {
-      toast.error('Failed to place order');
+      // Rollback on error
+      toast.error('Order failed to reach kitchen');
+      setOrders(prev => prev.filter(o => o.id !== newOrder.id));
+      setCart(newOrder.items);
+      setActiveTab('cart');
     } finally {
       setIsPlacingOrder(false);
       placingOrderRef.current = false;
     }
   };
 
-  // Generic Update Handler
-  const handleUpdateOrder = async (id: string, updates: Partial<Order>) => {
-    try {
-      const updated = await api.updateOrder(id, updates);
-      setOrders(prev => prev.map(o => o.id === id ? updated : o));
-      // Toast logic based on status
-      if (updates.status) {
-        toast.info(`Order status updated to ${updates.status}`);
-        let message = `Your order status is now ${updates.status}`;
-        if (updates.status === 'preparing') message = "Chef has started preparing your order!";
-        if (updates.status === 'ready') message = "Hurry! Your order is ready for pickup.";
-        if (updates.status === 'rejected') message = "Sorry, your order was rejected.";
-        sendLocalNotification("Order Update", message, parseInt(id.slice(-4)) || 102);
-      }
-      if (updates.refundRequest) {
-        toast.info('Refund request updated');
-        sendLocalNotification("Refund Update", "Your refund request has been received/updated.", 103);
-      }
-    } catch (e) {
-      toast.error('Failed to update order');
-    }
-  };
+  if (loading) return <ScreenLoader />;
+  if (!role) return <LoginScreen onLogin={handleLogin} />;
 
-  if (!role) {
-    return (
-      <Layout>
-        <Toaster position="top-center" richColors theme="dark" />
-        <LoginScreen onLogin={handleLogin} />
-      </Layout>
-    );
-  }
-
-  // --- STAFF UI ---
-  if (role === 'cook') {
-    return (
-      <Layout>
-        <Toaster position="top-center" richColors theme="dark" />
-        <div className="flex flex-col h-full">
-          <StaffDashboard
-            orders={orders}
-            onUpdateStatus={(id, status, reason) => handleUpdateOrder(id, { status: status as any, rejectionReason: reason })}
-            onLogout={handleLogout}
-          />
-        </div>
-      </Layout>
-    );
-  }
-
-  // --- MANAGER UI ---
-  if (role === 'manager') {
-    return (
-      <Layout>
-        <Toaster position="top-center" richColors theme="dark" />
-        <div className="flex flex-col h-full">
-          <ManagerDashboard
-            orders={orders}
-            menu={menu}
-            onUpdateOrder={handleUpdateOrder}
-            onUpdateMenu={async (updatedMenu) => {
-              setMenu(updatedMenu);
-              toast.success('Menu updated successfully!');
-            }}
-            onAddMenuItem={async (item) => {
-              try {
-                const newItem = await api.addMenuItem(item);
-                setMenu(prev => [...prev, newItem]);
-                toast.success(`${item.name} added to menu!`);
-              } catch (e) {
-                toast.error('Failed to add menu item');
-              }
-            }}
-            onUpdateMenuItem={async (id, updates) => {
-              try {
-                const updatedItem = await api.updateMenuItem(id, updates);
-                setMenu(prev => prev.map(i => i.id === id ? updatedItem : i));
-              } catch (e) {
-                toast.error('Failed to update menu item');
-              }
-            }}
-            branchPaused={branchPaused}
-            onToggleBranchPause={() => setBranchPaused(!branchPaused)}
-            onLogout={handleLogout}
-          />
-        </div>
-      </Layout>
-    );
-  }
-
-  // --- STUDENT UI ---
   return (
-    <Layout>
+    <div className="h-screen w-screen overflow-hidden bg-[var(--bg-primary)]">
       <Toaster position="top-center" richColors theme="dark" />
+      <Layout>
+        <div className="flex-1 relative overflow-hidden h-full">
+          <AnimatePresence mode="wait">
+            {role === 'student' && activeTab === 'home' && (
+              <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                <StudentHomeWithFeatures
+                  userId={userId}
+                  menu={menu}
+                  orders={orders.filter(o => o.userId === userId)}
+                  onLogout={handleLogout}
+                  onSelectBranch={b => { setBranch(b); setActiveTab('menu'); }}
+                />
+              </motion.div>
+            )}
 
-      {/* Branch Paused Banner */}
-      {branchPaused && (
-        <div className="bg-red-500 text-white text-center py-2 px-4 text-sm font-bold">
-          ⚠️ Ordering is temporarily paused by management
-        </div>
-      )}
+            {role === 'student' && activeTab === 'menu' && (
+              <motion.div key="menu" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="h-full">
+                <MenuScreen menu={menu} onAddToCart={addToCart} onBack={() => setActiveTab('home')} branch={branch} cart={cart} onGoToCart={() => setActiveTab('cart')} />
+              </motion.div>
+            )}
 
-      <div className="flex-1 h-full overflow-hidden relative">
-        <AnimatePresence mode="wait">
-          {activeTab === 'home' && (
-            <motion.div
-              key="home"
-              className="h-full w-full"
-              initial={{ opacity: 0, x: -15, scale: 0.98 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 15, scale: 0.98 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
-            >
-              <StudentHomeWithFeatures
-                userId={userId}
-                menu={menu}
-                onLogout={handleLogout}
-                onSelectBranch={(id) => {
-                  if (branchPaused) {
-                    toast.error('Ordering is temporarily paused');
-                    return;
-                  }
-                  setBranch(id);
-                  setActiveTab('menu');
-                }}
-              />
-            </motion.div>
-          )}
-          {activeTab === 'menu' && (
-            <motion.div
-              key="menu"
-              className="h-full w-full"
-              initial={{ opacity: 0, x: 15, scale: 0.98 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -15, scale: 0.98 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
-            >
-              <MenuScreen menu={menu} onAddToCart={addToCart} onBack={() => setActiveTab('home')} branch={branch} cart={cart} onGoToCart={() => setActiveTab('cart')} />
-            </motion.div>
-          )}
-          {activeTab === 'cart' && (
-            <motion.div
-              key="cart"
-              className="h-full w-full"
-              initial={{ opacity: 0, y: 15, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 15, scale: 0.98 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
-            >
-              <CartScreen
-                cart={cart}
-                onUpdateQuantity={updateQuantity}
-                onPlaceOrder={placeOrder}
-                total={cart.reduce((s, i) => s + i.price * i.quantity, 0)}
-                isPlacingOrder={isPlacingOrder}
-              />
-            </motion.div>
-          )}
-          {activeTab === 'orders' && (
-            <motion.div
-              key="orders"
-              className="h-full w-full"
-              initial={{ opacity: 0, y: 15, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 15, scale: 0.98 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
-            >
-              <OrdersScreen
-                orders={orders}
-                onCancelOrder={(id) => {
-                  const order = orders.find(o => o.id === id);
-                  if (order) {
-                    const refundAmount = calculateRefundAmount(order, 'user');
-                    handleUpdateOrder(id, {
-                      status: 'cancelled',
-                      refundRequest: {
-                        reason: 'Cancelled by user',
-                        status: 'pending',
-                        requestedAt: Date.now(),
-                        refundAmount,
-                        cancelledBy: 'user'
-                      }
-                    });
-                    if (refundAmount > 0) {
-                      toast.info(`Refund of ₹${refundAmount} will be processed after approval`);
-                    } else {
-                      toast.info('Order cancelled. No refundable items.');
+            {role === 'student' && activeTab === 'cart' && (
+              <motion.div key="cart" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="h-full">
+                <CartScreen
+                  cart={cart}
+                  total={cart.reduce((s, i) => s + i.price * i.quantity, 0)}
+                  onUpdateQuantity={(id: string, q: number) => setCart(prev => q < 1 ? prev.filter(i => i.id !== id) : prev.map(i => i.id === id ? { ...i, quantity: q } : i))}
+                  onPlaceOrder={placeOrder}
+                  isPlacingOrder={isPlacingOrder}
+                />
+              </motion.div>
+            )}
+
+            {role === 'student' && activeTab === 'orders' && (
+              <motion.div key="orders" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="h-full">
+                <OrdersScreen
+                  orders={orders.filter(o => o.userId === userId)}
+                  onCancelOrder={async id => {
+                    // Optimistic update
+                    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'cancelled' as any } : o));
+                    toast.success('Order Cancelled');
+
+                    try {
+                      await api.updateOrder(id, { status: 'cancelled' });
+                    } catch (error) {
+                      toast.error('Failed to cancel order');
+                      // Refresh to get correct state
+                      const freshOrders = await api.getOrders().catch(() => []);
+                      if (freshOrders.length) setOrders(freshOrders);
                     }
-                  }
-                }}
-                onRequestRefund={(id, reason) => {
-                  const order = orders.find(o => o.id === id);
-                  if (order && order.refundRequest) {
-                    handleUpdateOrder(id, {
-                      refundRequest: {
-                        ...order.refundRequest,
-                        reason
+                  }}
+                  onSubmitFeedback={async (id, f: Feedback) => {
+                    // Optimistic update
+                    setOrders(prev => prev.map(o => o.id === id ? { ...o, feedback: f } : o));
+                    toast.success('Thanks for feedback!');
+
+                    try {
+                      await api.submitFeedback({ id, ...f });
+                    } catch (error) {
+                      toast.error('Failed to submit feedback');
+                      // Rollback
+                      setOrders(prev => prev.map(o => o.id === id ? { ...o, feedback: undefined } : o));
+                    }
+                  }}
+                  onRequestRefund={async (id, r) => {
+                    // Optimistic update
+                    const refundRequest = { status: 'pending' as const, reason: r, requestedAt: Date.now() };
+                    setOrders(prev => prev.map(o => o.id === id ? { ...o, refundRequest } : o));
+                    toast.success('Refund requested');
+
+                    try {
+                      await api.updateOrder(id, { refundRequest });
+                    } catch (error) {
+                      toast.error('Failed to request refund');
+                      // Rollback
+                      setOrders(prev => prev.map(o => o.id === id ? { ...o, refundRequest: undefined } : o));
+                    }
+                  }}
+                />
+              </motion.div>
+            )}
+
+            {role === 'cook' && (
+              <Suspense fallback={<ScreenLoader />}>
+                <StaffDashboard
+                  orders={orders}
+                  onLogout={handleLogout}
+                  onUpdateStatus={async (id, s, reason) => {
+                    // Optimistic update - update UI immediately
+                    setOrders(prevOrders =>
+                      prevOrders.map(order =>
+                        order.id === id
+                          ? { ...order, status: s as any, ...(reason && { rejectionReason: reason }) }
+                          : order
+                      )
+                    );
+
+                    // Then make API call in background
+                    try {
+                      await api.updateOrder(id, {
+                        status: s as any,
+                        ...(reason && { rejectionReason: reason })
+                      });
+                    } catch (error) {
+                      // Rollback on error and show notification
+                      console.error('Failed to update order status:', error);
+                      toast.error('Failed to update order status. Please try again.');
+
+                      // Refresh orders from server to get accurate state
+                      try {
+                        const freshOrders = await api.getOrders();
+                        if (freshOrders) setOrders(freshOrders);
+                      } catch (e) {
+                        console.error('Failed to refresh orders:', e);
                       }
-                    });
-                  }
-                }}
-                onSubmitFeedback={(id, feedback) => handleUpdateOrder(id, { feedback })}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-      <Navbar activeTab={activeTab} onTabChange={setActiveTab} cartCount={cart.length} />
-    </Layout>
+                    }
+                  }}
+                />
+              </Suspense>
+            )}
+
+            {role === 'manager' && (
+              <Suspense fallback={<ScreenLoader />}>
+                <ManagerDashboard
+                  orders={orders}
+                  menu={menu}
+                  onLogout={handleLogout}
+                  onUpdateOrder={async (id, s) => {
+                    // Store previous state for rollback
+                    const previousOrders = orders;
+
+                    // Optimistic update
+                    setOrders(prev => prev.map(o => o.id === id ? { ...o, ...s } : o));
+                    toast.success('System record updated');
+
+                    try {
+                      await api.updateOrder(id, s);
+                    } catch (e) {
+                      toast.error('Failed to update record');
+                      // Rollback on error
+                      setOrders(previousOrders);
+                    }
+                  }}
+                />
+              </Suspense>
+            )}
+          </AnimatePresence>
+        </div>
+        {role === 'student' && <Navbar activeTab={activeTab} onTabChange={setActiveTab} cartCount={cart.reduce((s, i) => s + i.quantity, 0)} />}
+      </Layout>
+    </div>
   );
 }

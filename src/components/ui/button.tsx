@@ -1,67 +1,38 @@
-import * as React from "react";
-import { Slot } from "@radix-ui/react-slot@1.1.2";
-import { cva, type VariantProps } from "class-variance-authority@0.7.1";
+import React from 'react';
+import { motion, HTMLMotionProps } from 'motion/react';
 
-import { cn } from "./utils";
-
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive android-ripple active-shrink tap-highlight-none",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
-        outline:
-          "border bg-background text-foreground hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9 rounded-md",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  },
-);
-
-import { Loader2 } from "lucide-react";
-
-function Button({
-  className,
-  variant,
-  size,
-  asChild = false,
-  isLoading = false,
-  children,
-  ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
-    isLoading?: boolean;
-  }) {
-  const Comp = asChild ? Slot : "button";
-
-  return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      disabled={props.disabled || isLoading}
-      {...props}
-    >
-      {isLoading && <Loader2 className="animate-spin" />}
-      {children}
-    </Comp>
-  );
+interface ButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+  children?: React.ReactNode;
 }
 
-export { Button, buttonVariants };
+export const Button = ({ variant = 'primary', size = 'md', className, isLoading, children, ...props }: ButtonProps) => {
+  const baseStyle = "rounded-full font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg cursor-pointer";
+
+  const variants = {
+    primary: "bg-[#FF7A2F] text-white hover:bg-[#E6621F] shadow-[#FF7A2F]/40 border-b-4 border-[#D65A15]",
+    secondary: "bg-[#3F8A4F] text-white hover:bg-[#2E6B3C] shadow-[#3F8A4F]/40 border-b-4 border-[#255230]",
+    outline: "border-2 border-[var(--border-color)] text-[var(--text-primary)] bg-[var(--card-bg)] hover:bg-[var(--input-bg)]",
+    danger: "bg-red-500 text-white hover:bg-red-600 shadow-red-500/30 border-b-4 border-red-700"
+  };
+
+  const sizes = {
+    sm: "px-4 py-1.5 text-sm",
+    md: "px-6 py-3 text-base",
+    lg: "px-8 py-4 text-lg"
+  };
+
+  return (
+    <motion.button
+      whileTap={{ scale: 0.95, y: 2, borderBottomWidth: "0px", marginBottom: "4px" }}
+      whileHover={{ y: -1 }}
+      className={`${baseStyle} ${variants[variant]} ${sizes[size]} ${className || ''} ${isLoading ? 'opacity-80 pointer-events-none' : ''}`}
+      {...props as any}
+    >
+      {isLoading ? <span className="animate-spin mr-2">⏳</span> : null}
+      {children}
+    </motion.button>
+  );
+};

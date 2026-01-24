@@ -32,6 +32,7 @@ export interface RefundRequest {
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   requestedAt: number;
+  resolvedAt?: number;
   refundAmount?: number; // Calculated based on refundable items
   cancelledBy?: 'user' | 'staff'; // Who cancelled the order
 }

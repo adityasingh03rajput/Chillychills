@@ -7,51 +7,39 @@ export const ChillyLogo = ({ className = "h-16", withFrame = true }: { className
       <img
         src={logo}
         alt="Chilly Chills"
-        className={`object-contain ${className}`}
+        className={`object-contain ${className} transition-all duration-700 hover:scale-110 active:scale-95`}
       />
     );
   }
 
   return (
-    <div className="relative inline-block">
-      {/* Decorative Frame Container */}
-      <div className="relative p-4 bg-gradient-to-br from-[#FF7A2F]/10 via-transparent to-[#FF7A2F]/5 rounded-2xl">
+    <div className="relative inline-block group">
+      {/* Immersive Elite Frame */}
+      <div className="relative p-6 bg-gradient-to-br from-[var(--card-bg)] via-[var(--bg-primary)] to-[var(--card-bg)] rounded-[2.5rem] border border-[var(--border-color)] shadow-2xl transition-all duration-700 group-hover:shadow-[var(--accent-orange)]/10">
 
-        {/* Corner Decorations - Top Left */}
-        <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#FF7A2F] rounded-tl-2xl" />
-        <div className="absolute top-1 left-1 w-6 h-6 border-t-2 border-l-2 border-[#ff9554] rounded-tl-xl opacity-60" />
+        {/* Abstract Floating Rings (Glassmorphism Decor) */}
+        <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--accent-orange)]/5 rounded-full -mr-12 -mt-12 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
+        <div className="absolute bottom-0 left-0 w-20 h-20 bg-[var(--accent-green)]/5 rounded-full -ml-10 -mb-10 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
 
-        {/* Corner Decorations - Top Right */}
-        <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[#FF7A2F] rounded-tr-2xl" />
-        <div className="absolute top-1 right-1 w-6 h-6 border-t-2 border-r-2 border-[#ff9554] rounded-tr-xl opacity-60" />
+        {/* Tactical Corner Accents */}
+        <div className="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-[var(--accent-orange)] rounded-tl-lg opacity-40 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-[var(--accent-orange)] rounded-br-lg opacity-40 group-hover:opacity-100 transition-opacity" />
 
-        {/* Corner Decorations - Bottom Left */}
-        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[#FF7A2F] rounded-bl-2xl" />
-        <div className="absolute bottom-1 left-1 w-6 h-6 border-b-2 border-l-2 border-[#ff9554] rounded-bl-xl opacity-60" />
+        {/* Logo Visual Volume */}
+        <div className="relative z-10">
+          <img
+            src={logo}
+            alt="Chilly Chills"
+            className={`object-contain transition-all duration-700 group-hover:rotate-1 group-hover:scale-105 drop-shadow-2xl ${className}`}
+          />
+        </div>
 
-        {/* Corner Decorations - Bottom Right */}
-        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#FF7A2F] rounded-br-2xl" />
-        <div className="absolute bottom-1 right-1 w-6 h-6 border-b-2 border-r-2 border-[#ff9554] rounded-br-xl opacity-60" />
-
-        {/* Accent Dots */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#FF7A2F] rounded-full" />
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#FF7A2F] rounded-full" />
-        <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#FF7A2F] rounded-full" />
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#FF7A2F] rounded-full" />
-
-        {/* Logo */}
-        <img
-          src={logo}
-          alt="Chilly Chills"
-          className={`object-contain relative z-10 ${className}`}
-        />
-
-        {/* Subtle Inner Glow */}
-        <div className="absolute inset-3 rounded-xl bg-[#FF7A2F]/5 blur-xl -z-10" />
+        {/* Core Atmosphere */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-[var(--accent-orange)]/5 to-transparent rounded-[2.5rem] pointer-events-none" />
       </div>
 
-      {/* Outer Shadow */}
-      <div className="absolute inset-0 rounded-2xl shadow-xl shadow-[#FF7A2F]/20 -z-20" />
+      {/* Floating Base Shadow */}
+      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-black/10 blur-xl rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
     </div>
   );
 };

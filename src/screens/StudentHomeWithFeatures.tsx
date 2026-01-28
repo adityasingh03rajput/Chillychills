@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Sparkles, Gift, MessageSquare, User, Users,
-  Box, MapPin, ArrowRight, Bell, LogOut,
-  Star, ChevronRight, TrendingUp
+  Sparkles, Gift, Box, User, Users, Bell, LogOut,
+  Star, ChevronRight, TrendingUp, ShieldCheck, ArrowRight, Zap, Target, X, Wallet, MessageSquare, Radio
 } from 'lucide-react';
-import { ChillyLogo } from '../components/ChillyLogo';
 import { Button } from '../components/ui/Button';
 import {
   FeatureModal,
   RecommendedList,
   GiftCardStore,
-  FeedbackForm,
   CollectionList,
   UserProfile,
+  FeedbackForm,
   RecommendToFriends
 } from '../components/StudentFeaturesConnected';
 
@@ -21,166 +19,269 @@ interface StudentHomeWithFeaturesProps {
   onSelectBranch: (id: string) => void;
   userId: string;
   menu: any[];
+  user: any;
   onLogout: () => void;
   orders: any[];
+  onReplenish?: (amount: number) => Promise<boolean>;
+  onRefreshUser?: () => void;
 }
 
-export const StudentHomeWithFeatures = ({ onSelectBranch, userId, menu, onLogout, orders }: StudentHomeWithFeaturesProps) => {
+export const StudentHomeWithFeatures = ({
+  onSelectBranch,
+  userId,
+  menu,
+  user,
+  onLogout,
+  orders,
+  onReplenish,
+  onRefreshUser
+}: StudentHomeWithFeaturesProps) => {
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
+  const [showReplenish, setShowReplenish] = useState(false);
+  const [isReplenishing, setIsReplenishing] = useState(false);
 
   const branches = [
-    { id: 'A', name: 'Burger Junction', subtitle: 'Building A • North Side', icon: '🍔', gradient: 'from-orange-500 to-rose-500' },
-    { id: 'B', name: 'Chill & Brew', subtitle: 'Building B • Center Hub', icon: '🥤', gradient: 'from-blue-500 to-indigo-600' },
-    { id: 'C', name: 'Quick Bites', subtitle: 'Building C • East Wing', icon: '🍕', gradient: 'from-emerald-500 to-teal-600' },
+    { id: 'A', name: 'Burger Junction', subtitle: 'Building A • North Side', icon: '🍔', gradient: 'from-orange-600 to-rose-600', hue: 'orange' },
+    { id: 'B', name: 'Chill & Brew', subtitle: 'Building B • Center Hub', icon: '🥤', gradient: 'from-blue-600 to-indigo-700', hue: 'blue' },
+    { id: 'C', name: 'Quick Bites', subtitle: 'Building C • East Wing', icon: '🍕', gradient: 'from-emerald-600 to-teal-700', hue: 'green' },
   ];
 
   const features = [
-    { id: 'recommend', label: 'Friends', icon: Users, color: 'text-blue-500' },
+    { id: 'recommend', label: 'Social', icon: Users, color: 'text-blue-500' },
     { id: 'giftcards', label: 'Gifts', icon: Gift, color: 'text-amber-500' },
-    { id: 'collection', label: 'Badges', icon: Box, color: 'text-indigo-500' },
-    { id: 'profile', label: 'Profile', icon: User, color: 'text-purple-500' },
+    { id: 'collection', label: 'Vault', icon: Box, color: 'text-indigo-500' },
+    { id: 'feedback', label: 'Support', icon: MessageSquare, color: 'text-rose-500' },
+    { id: 'broadcast', label: 'Relay', icon: Radio, color: 'text-emerald-500' },
+    { id: 'profile', label: 'Status', icon: User, color: 'text-purple-500' },
   ];
+
+  const replenishAmounts = [100, 200, 500, 1000];
+
+  const handleReplenishClick = async (amount: number) => {
+    if (!onReplenish) return;
+    setIsReplenishing(true);
+    const success = await onReplenish(amount);
+    if (success) setShowReplenish(false);
+    setIsReplenishing(false);
+  };
 
   const renderFeatureContent = () => {
     switch (activeFeature) {
       case 'recommend': return <RecommendedList userId={userId} />;
-      case 'giftcards': return <GiftCardStore userId={userId} />;
+      case 'giftcards': return <GiftCardStore userId={userId} onActionSuccess={onRefreshUser} />;
       case 'collection': return <CollectionList userId={userId} />;
-      case 'profile': return <UserProfile userId={userId} />;
+      case 'feedback': return <FeedbackForm userId={userId} />;
+      case 'broadcast': return <RecommendToFriends userId={userId} menu={menu} />;
+      case 'profile': return <UserProfile userId={userId} user={user} onLogout={onLogout} />;
       default: return null;
     }
   };
 
   return (
-    <div className="h-full bg-[var(--bg-primary)] px-4 sm:px-6 pt-6 pb-40 overflow-y-auto custom-scrollbar flex flex-col">
+    <div className="h-full bg-black px-6 pt-6 pb-24 overflow-y-auto no-scrollbar">
 
-      {/* Top Profile Bar */}
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[var(--accent-orange)] to-rose-500 flex items-center justify-center p-0.5 shadow-lg shadow-orange-500/20">
-            <div className="w-full h-full rounded-full bg-[var(--bg-primary)] flex items-center justify-center overflow-hidden border border-[var(--border-color)]">
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`} alt="avatar" className="w-full h-full object-cover" />
+      {/* 24dp Screen Margin + 56dp Header equivalent */}
+      <div className="flex justify-between items-center mb-8 pt-safe">
+        <div className="flex items-center gap-4">
+          <motion.div
+            whileTap={{ scale: 0.95 }}
+            className="w-14 h-14 rounded-xl bg-gradient-to-tr from-[var(--accent-orange)] to-rose-600 p-0.5"
+          >
+            <div className="w-full h-full rounded-[10px] bg-stone-900 flex items-center justify-center overflow-hidden border border-white/5">
+              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`} alt="avatar" className="w-[110%] h-[110%] object-cover" />
             </div>
-          </div>
+          </motion.div>
           <div>
-            <h1 className="text-lg sm:text-xl font-black text-[var(--text-primary)] leading-none mb-1 uppercase tracking-tighter">Elite Eater</h1>
-            <div className="flex items-center gap-1.5 opacity-60">
-              <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-green)]" />
-              <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Verified Student</p>
+            <h1 className="text-[20px] font-black text-white tracking-tight uppercase leading-none mb-1">Elite Eater</h1>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/10 w-fit">
+              <ShieldCheck size={10} className="text-[var(--accent-green)]" />
+              <span className="text-[12px] font-black uppercase tracking-widest text-[var(--accent-green)]">Verified Hub</span>
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[var(--card-bg)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-primary)] shadow-sm active:scale-95 transition-all">
-            <Bell size={18} />
-          </button>
-          <button onClick={onLogout} className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 shadow-sm active:scale-95 transition-all">
-            <LogOut size={18} />
-          </button>
+          <motion.button whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-xl bg-stone-900 border border-white/10 flex items-center justify-center text-white shadow-lg">
+            <Bell size={20} />
+          </motion.button>
         </div>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-3xl sm:text-4xl font-black text-[var(--text-primary)] mb-1.5 tracking-tighter uppercase leading-none">Fresh <span className="text-[var(--accent-orange)]">Feasts.</span></h2>
-        <p className="text-[var(--text-secondary)] text-xs sm:text-sm font-medium opacity-60 uppercase tracking-widest">Fuel your creative genius</p>
-      </div>
-
-      {/* Immersive Balance Hub */}
-      <div className="premium-glass p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] mb-10 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent-orange)]/10 rounded-full -mr-32 -mt-32 blur-[80px] transition-transform group-hover:scale-110 duration-700 pointer-events-none" />
-        <div className="flex justify-between items-center relative z-10 gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-2 sm:mb-3">
-              <div className="px-2 py-0.5 bg-[var(--accent-orange)]/10 rounded-full border border-[var(--accent-orange)]/20">
-                <Sparkles size={10} className="text-[var(--accent-orange)]" fill="currentColor" />
-              </div>
-              <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] sm:tracking-[0.3em]">Vault Balance</span>
-            </div>
-            <h3 className="text-4xl sm:text-5xl font-black text-[var(--text-primary)] tracking-tighter">₹1,240</h3>
-            <div className="flex items-center gap-1.5 mt-2 sm:mt-3 text-[var(--accent-green)]">
-              <TrendingUp size={12} strokeWidth={3} />
-              <p className="text-[9px] sm:text-[10px] uppercase font-bold tracking-widest">+240 points ready</p>
-            </div>
-          </div>
-          <Button variant="primary" size="md" className="px-6 sm:px-10 py-4 sm:py-5 text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-orange-500/30 whitespace-nowrap">
-            REFILL
-          </Button>
-        </div>
-      </div>
-
-      {/* Live Canteens */}
+      {/* 32sp Display Header */}
       <div className="mb-10">
-        <div className="flex justify-between items-end mb-6 px-1 lg:px-2">
-          <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] tracking-tight uppercase">Open Hubs</h2>
-          <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 bg-[var(--accent-green)]/10 text-[var(--accent-green)] rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-[var(--accent-green)]/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-green)] animate-pulse" />
-            3 LIVE
+        <div className="flex items-center gap-2 mb-2">
+          <Target size={14} className="text-[var(--accent-orange)]" />
+          <span className="text-[12px] font-black text-[var(--accent-orange)] uppercase tracking-widest">Active Objective</span>
+        </div>
+        <h2 className="text-[32px] font-black text-white mb-2 tracking-tight uppercase leading-[1.1]">
+          Sustain <br />
+          <span className="text-[var(--accent-orange)] italic">Innovation.</span>
+        </h2>
+        <p className="text-white/30 text-[14px] font-bold uppercase tracking-widest mt-4">Hub Sector: 7G Mainframe</p>
+      </div>
+
+      {/* 16dp Grid Calibrated Vault */}
+      <div className="bg-stone-900 p-6 rounded-2xl mb-10 relative overflow-hidden border border-white/5 shadow-xl">
+        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[var(--accent-orange)]/5 rounded-full -mr-[150px] -mt-[150px] blur-[80px]" />
+
+        <div className="flex justify-between items-center relative z-10">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-4 opacity-40">
+              <Zap size={14} className="text-white" />
+              <span className="text-[12px] font-black text-white uppercase tracking-widest">Reserve Capital</span>
+            </div>
+
+            <div className="flex items-baseline gap-2 mb-6">
+              <span className="text-[20px] font-black text-[var(--accent-orange)]">₹</span>
+              <h3 className="text-[48px] font-black text-white tracking-tighter tabular-nums leading-none">
+                {user?.balance || 0}
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="px-3 py-1.5 bg-[var(--accent-green)]/10 rounded-lg border border-[var(--accent-green)]/20 flex items-center gap-2">
+                <TrendingUp size={12} className="text-[var(--accent-green)]" />
+                <span className="text-[12px] font-black text-[var(--accent-green)] uppercase">+{user?.points || 0} Energy</span>
+              </div>
+            </div>
           </div>
+
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowReplenish(true)}
+            className="w-16 h-16 rounded-xl bg-[var(--accent-orange)] shadow-lg shadow-orange-500/20 flex items-center justify-center text-white"
+          >
+            <ArrowRight size={24} strokeWidth={3} />
+          </motion.button>
+        </div>
+      </div>
+
+      {/* 18sp Section Header + 16dp Card Spacing */}
+      <div className="mb-12">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-1 h-6 bg-[var(--accent-orange)] rounded-full" />
+          <h2 className="text-[18px] font-black text-white uppercase tracking-tight">Canteen Sectors</h2>
         </div>
 
-        <div className="space-y-4 sm:space-y-5">
+        <div className="grid grid-cols-1 gap-4">
           {branches.map((branch, i) => (
             <motion.div
               layout
               key={branch.id}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1, type: "spring", bounce: 0.3 }}
+              transition={{ delay: i * 0.1 }}
               onClick={() => onSelectBranch(branch.id)}
-              className="bg-[var(--card-bg)] p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] border border-[var(--border-color)] flex items-center gap-4 sm:gap-6 group cursor-pointer hover:border-[var(--accent-orange)]/30 transition-all shadow-xl active:scale-[0.98]"
+              className="bg-stone-900 p-4 rounded-2xl border border-white/5 flex items-center gap-4 group cursor-pointer hover:bg-stone-800/50 active:scale-98 transition-all"
             >
-              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br ${branch.gradient} flex items-center justify-center text-3xl sm:text-4xl shadow-2xl group-hover:scale-105 transition-transform duration-500 border border-white/10 shrink-0`}>
+              <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${branch.gradient} flex items-center justify-center text-4xl shadow-lg border border-white/5`}>
                 {branch.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="font-black text-[var(--text-primary)] text-lg sm:text-xl leading-none mb-1.5 sm:mb-2 truncate uppercase tracking-tight">{branch.name}</h4>
-                <p className="text-[var(--text-secondary)] text-[9px] sm:text-[10px] font-black uppercase tracking-widest opacity-60 mb-2 sm:mb-4 truncate">{branch.subtitle}</p>
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="flex items-center gap-1.5">
+                <h4 className="font-black text-white text-[16px] uppercase tracking-tight mb-1">{branch.name}</h4>
+                <p className="text-white/30 text-[12px] font-bold uppercase tracking-widest mb-2">{branch.subtitle}</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
                     <Star size={10} className="fill-[var(--accent-orange)] text-[var(--accent-orange)]" />
-                    <span className="text-[9px] sm:text-[10px] font-black text-[var(--text-primary)]">4.8</span>
+                    <span className="text-[12px] font-black text-white">4.8</span>
                   </div>
-                  <div className="w-0.5 h-0.5 sm:w-1 sm:h-1 rounded-full bg-[var(--text-muted)] opacity-30" />
-                  <span className="text-[9px] sm:text-[10px] font-black text-[var(--accent-green)] uppercase tracking-widest">Rapid ⚡</span>
+                  <span className="text-[10px] text-white/20">|</span>
+                  <p className="text-[10px] font-black text-[var(--accent-green)] uppercase tracking-widest">Rapid Link ⚡</p>
                 </div>
               </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[var(--input-bg)] flex items-center justify-center text-[var(--text-primary)] group-hover:bg-[var(--accent-orange)] group-hover:text-white transition-all border border-[var(--border-color)] shrink-0">
-                <ChevronRight strokeWidth={3} className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
+              <ChevronRight size={20} className="text-white/20" />
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Power Tools */}
-      <div className="mb-4">
-        <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] mb-6 sm:mb-8 tracking-tight uppercase px-1 lg:px-2">Power Tools</h2>
-        <div className="grid grid-cols-4 gap-3 sm:gap-6">
-          {features.map((f, i) => (
+      {/* 16sp Body / 8-12dp Corner Radius Modules */}
+      <div className="mb-8">
+        <h2 className="text-[18px] font-black text-white uppercase tracking-tight mb-6 px-1">System Modules</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {features.map((f) => (
             <button
               key={f.id}
               onClick={() => setActiveFeature(f.id)}
-              className="flex flex-col items-center gap-3 sm:gap-4 active:scale-90 transition-all group"
+              className="flex flex-col items-center gap-2 active:scale-90 transition-all group"
             >
-              <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[1.25rem] sm:rounded-[1.75rem] bg-[var(--card-bg)] flex items-center justify-center border border-[var(--border-color)] shadow-xl ${f.color} group-hover:border-[var(--accent-orange)]/30 transition-all group-hover:-translate-y-1`}>
-                <f.icon strokeWidth={2.5} className="w-[22px] h-[22px] sm:w-7 sm:h-7" />
+              <div className={`w-14 h-14 rounded-2xl bg-stone-900 flex items-center justify-center border border-white/10 shadow-lg ${f.color} group-hover:bg-stone-800`}>
+                <f.icon size={24} />
               </div>
-              <span className="text-[8px] sm:text-[9px] font-black text-[var(--text-muted)] uppercase tracking-[0.15em] sm:tracking-[0.2em] text-center group-hover:text-[var(--text-primary)]">{f.label}</span>
+              <span className="text-[12px] font-black text-white/40 uppercase tracking-widest">{f.label}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Feature Modals */}
       <FeatureModal
         isOpen={!!activeFeature}
         onClose={() => setActiveFeature(null)}
         title={features.find(f => f.id === activeFeature)?.label || ''}
       >
-        <div className="p-4">
+        <div className="p-4 bg-stone-900 min-h-[400px]">
           {renderFeatureContent()}
         </div>
       </FeatureModal>
+
+      {/* 56dp Height Styled Input Modal */}
+      <AnimatePresence>
+        {showReplenish && (
+          <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-20">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowReplenish(false)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="w-full max-w-[440px] bg-stone-900 rounded-t-[24px] border-t border-white/10 p-6 relative z-10"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h3 className="text-[20px] font-black text-white uppercase">Vault Refill</h3>
+                  <p className="text-[12px] font-bold text-white/30 uppercase tracking-widest">Quantum Transfer</p>
+                </div>
+                <button onClick={() => setShowReplenish(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {replenishAmounts.map(amt => (
+                  <button
+                    key={amt}
+                    disabled={isReplenishing}
+                    onClick={() => handleReplenishClick(amt)}
+                    className="h-[56px] rounded-xl bg-stone-800 border border-white/5 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+                  >
+                    <span className="text-[16px] font-black text-white group-hover:text-[var(--accent-orange)]">₹{amt}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="bg-stone-800/50 p-4 rounded-xl border border-white/5 flex items-center gap-4 mb-6">
+                <Wallet size={20} className="text-[var(--accent-green)]" />
+                <div>
+                  <p className="text-[12px] font-black text-white/30 uppercase">Vault Balance</p>
+                  <p className="text-[18px] font-black text-white">₹{user?.balance || 0}</p>
+                </div>
+              </div>
+
+              <Button
+                disabled={isReplenishing}
+                onClick={() => setShowReplenish(false)}
+                className="w-full h-[56px] rounded-xl text-[14px] font-black uppercase bg-white text-black"
+              >
+                Abort
+              </Button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

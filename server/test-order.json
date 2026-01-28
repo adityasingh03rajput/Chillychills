@@ -1,0 +1,24 @@
+{
+    "token": "A001",
+    "userId": "test_student_123",
+    "items": [
+        {
+            "id": "burger-classic",
+            "name": "Classic Burger",
+            "price": 199,
+            "quantity": 2,
+            "image": "🍔"
+        },
+        {
+            "id": "fries-regular",
+            "name": "French Fries",
+            "price": 99,
+            "quantity": 1,
+            "image": "🍟"
+        }
+    ],
+    "status": "placed",
+    "totalAmount": 497,
+    "branch": "A",
+    "createdAt": 1738059000000
+}

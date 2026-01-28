@@ -1,0 +1,48 @@
+{
+    "items": [
+        {
+            "id": "burger-classic",
+            "name": "Classic Burger",
+            "description": "Juicy beef patty with fresh veggies",
+            "basePrice": 199,
+            "category": "Burgers",
+            "image": "🍔",
+            "vegetarian": false,
+            "available": true,
+            "preparationTime": 15
+        },
+        {
+            "id": "fries-regular",
+            "name": "French Fries",
+            "description": "Crispy golden fries",
+            "basePrice": 99,
+            "category": "Sides",
+            "image": "🍟",
+            "vegetarian": true,
+            "available": true,
+            "preparationTime": 5
+        },
+        {
+            "id": "pizza-margherita",
+            "name": "Margherita Pizza",
+            "description": "Classic tomato and cheese",
+            "basePrice": 299,
+            "category": "Pizza",
+            "image": "🍕",
+            "vegetarian": true,
+            "available": true,
+            "preparationTime": 20
+        },
+        {
+            "id": "coke",
+            "name": "Coca Cola",
+            "description": "Chilled soft drink",
+            "basePrice": 50,
+            "category": "Beverages",
+            "image": "🥤",
+            "vegetarian": true,
+            "available": true,
+            "preparationTime": 2
+        }
+    ]
+}

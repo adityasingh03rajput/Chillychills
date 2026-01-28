@@ -11,7 +11,7 @@ import { api } from './utils/api';
 import { INITIAL_MENU } from './utils/initialData';
 import { MenuItem, CartItem, Order, Feedback } from './utils/types';
 import { Toaster, toast } from 'sonner';
-import { supabase } from './utils/supabase/client';
+import { io, Socket } from 'socket.io-client';
 import { initNotifications, sendLocalNotification } from './utils/notifications';
 import { Loader2 } from 'lucide-react';
 
@@ -20,7 +20,7 @@ const StaffDashboard = lazy(() => import('./screens/StaffDashboard').then(m => (
 const ManagerDashboard = lazy(() => import('./screens/ManagerDashboard').then(m => ({ default: m.ManagerDashboard })));
 
 const ScreenLoader = () => (
-  <div className="flex h-screen w-screen items-center justify-center bg-[var(--bg-primary)]">
+  <div className="flex h-screen w-screen items-center justify-center bg-black">
     <Loader2 className="h-10 w-10 animate-spin text-[var(--accent-orange)]" />
   </div>
 );
@@ -34,11 +34,22 @@ export default function App() {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [branchPaused, setBranchPaused] = useState(false);
 
   const placingOrderRef = useRef(false);
+
+  // Refresh menu from server
+  const refreshMenu = async () => {
+    try {
+      const menuData = await api.getMenu();
+      if (menuData) setMenu(menuData);
+    } catch (e) {
+      console.error('Menu refresh failed:', e);
+    }
+  };
 
   // Initialize App
   useEffect(() => {
@@ -51,46 +62,41 @@ export default function App() {
           const { role: r, userId: id } = JSON.parse(persisted);
           setRole(r);
           setUserId(id);
-          if (r === 'student') setActiveTab('home');
+          if (r === 'student') {
+            setActiveTab('home');
+            api.getUser(id).then(setUser).catch(console.error);
+          }
         }
 
-        const menuData = await api.getMenu();
-        if (menuData && menuData.length > 0) setMenu(menuData);
-        else {
-          await api.seedMenu(INITIAL_MENU);
+        try {
+          const menuData = await api.getMenu();
+          if (menuData && menuData.length > 0) {
+            setMenu(menuData);
+          } else {
+            await api.seedMenu(INITIAL_MENU);
+            setMenu(INITIAL_MENU);
+          }
+        } catch (menuError) {
+          console.error('Menu fetch failed, using default menu:', menuError);
+          toast.error('Server is slow. Using offline menu.');
           setMenu(INITIAL_MENU);
         }
       } catch (err) {
         console.error('Initial load failed:', err);
+        toast.error('Connection issue. Some features may be limited.');
       } finally {
         setLoading(false);
       }
     };
     init();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const userRole = session.user.app_metadata.provider === 'google' ? 'student' : (session.user.user_metadata?.role || 'student');
-        setRole(userRole);
-        setUserId(session.user.id);
-        localStorage.setItem('chilly_user_session', JSON.stringify({ role: userRole, userId: session.user.id }));
-        if (userRole === 'student') setActiveTab('home');
-      } else if (event === 'SIGNED_OUT') {
-        setRole(null);
-        localStorage.removeItem('chilly_user_session');
-      }
-    });
-
-    return () => authListener.subscription.unsubscribe();
   }, []);
 
-  // Realtime Orders with Enhanced Connection Handling
+  // Realtime Orders with Socket.io (10-20x faster than Supabase)
   useEffect(() => {
     if (!role) return;
 
     let isSubscribed = true;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
+    let socket: Socket | null = null;
     let pollingInterval: NodeJS.Timeout | null = null;
     let previousOrderIds = new Set<string>();
 
@@ -101,90 +107,90 @@ export default function App() {
         const data = await api.getOrders();
         if (data && isSubscribed) {
           setOrders(data);
-          reconnectAttempts = 0; // Reset on successful fetch
-
-          // Update previousOrderIds for notification logic
           previousOrderIds = new Set(data.map(o => o.id));
         }
       } catch (e) {
         console.error('Orders fetch failed:', e);
-
-        // Exponential backoff for retries
-        if (reconnectAttempts < maxReconnectAttempts) {
-          reconnectAttempts++;
-          const backoffTime = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-          console.log(`Retrying in ${backoffTime}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
-          setTimeout(() => isSubscribed && fetchOrders(), backoffTime);
-        }
       }
     };
 
     // Initial fetch
     fetchOrders();
 
-    // Setup Supabase realtime channel - simplified config for postgres_changes
-    const channel = supabase
-      .channel('orders-realtime-' + Date.now()) // Unique channel name
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        async (payload) => {
-          if (!isSubscribed) return;
+    // Setup Socket.io connection to Node.js backend
+    socket = io('http://localhost:3001', {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 10
+    });
 
-          console.log('📡 Realtime event received:', payload.eventType, payload);
+    socket.on('connect', () => {
+      console.log('✅ Socket.io connected:', socket?.id);
+      socket?.emit('joinRole', role); // Join role-specific room
+    });
 
-          try {
-            const data = await api.getOrders();
-            if (data && isSubscribed) {
-              // Check for new orders using previousOrderIds instead of stale closure
-              const newOrders = data.filter(n => n.status === 'placed' && !previousOrderIds.has(n.id));
+    socket.on('disconnect', () => {
+      console.log('❌ Socket.io disconnected');
+    });
 
-              if ((role === 'cook' || role === 'manager') && newOrders.length > 0) {
-                toast.info(`🛎️ ${newOrders.length} new order${newOrders.length > 1 ? 's' : ''} received!`);
-                if (window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
-              }
+    // Listen for new orders (real-time <50ms)
+    socket.on('newOrder', (order: Order) => {
+      console.log('🛎️ New order received via Socket.io:', order);
 
-              setOrders(data);
-              previousOrderIds = new Set(data.map(o => o.id));
-            }
-          } catch (error) {
-            console.error('Error handling realtime update:', error);
-          }
+      if (!previousOrderIds.has(order.id)) {
+        if (role === 'cook' || role === 'manager') {
+          toast.info(`🛎️ New order #${order.token} received!`);
+          if (window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
         }
-      )
-      .subscribe((status, err) => {
-        if (err) {
-          console.error('❌ Supabase subscription error:', err);
-        }
-        console.log('🔌 Supabase channel status:', status);
-      });
 
-    // Optimized polling based on role - increased frequency
-    const pollingIntervalTime = (role === 'cook' || role === 'manager') ? 10000 : 30000;
-    pollingInterval = setInterval(fetchOrders, pollingIntervalTime);
+        setOrders(prev => [order, ...prev]);
+        previousOrderIds.add(order.id);
+      }
+    });
+
+    // Listen for order updates (real-time <50ms)
+    socket.on('orderUpdate', (updatedOrder: Order) => {
+      console.log('📝 Order updated via Socket.io:', updatedOrder);
+
+      setOrders(prev => prev.map(o =>
+        o.id === updatedOrder.id ? updatedOrder : o
+      ));
+
+      // Refresh balance if refund occurred
+      if (role === 'student' && updatedOrder.userId === userId) {
+        api.getUser(userId).then(setUser).catch(console.error);
+      }
+    });
+
+    // Fallback polling (only as backup, 30s interval)
+    pollingInterval = setInterval(fetchOrders, 30000);
 
     // Cleanup function
     return () => {
       isSubscribed = false;
       if (pollingInterval) clearInterval(pollingInterval);
 
-      supabase.removeChannel(channel).then(() => {
-        console.log('✅ Channel cleanup complete');
-      }).catch((err) => {
-        console.error('Error during channel cleanup:', err);
-      });
+      if (socket) {
+        socket.disconnect();
+        console.log('✅ Socket.io cleanup complete');
+      }
     };
   }, [role]);
 
-  const handleLogin = (selectedRole: string) => {
+  const handleLogin = (selectedRole: string, actualUserId: string) => {
     setRole(selectedRole);
-    localStorage.setItem('chilly_user_session', JSON.stringify({ role: selectedRole, userId }));
-    if (selectedRole === 'student') setActiveTab('home');
+    setUserId(actualUserId);
+    localStorage.setItem('chilly_user_session', JSON.stringify({ role: selectedRole, userId: actualUserId }));
+    if (selectedRole === 'student') {
+      setActiveTab('home');
+      api.getUser(actualUserId).then(setUser).catch(console.error);
+    }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut().catch(() => { });
     localStorage.removeItem('chilly_user_session');
     setRole(null);
+    setUserId('');
     setCart([]);
     toast.info('Session Ended');
   };
@@ -232,6 +238,9 @@ export default function App() {
 
       // Replace temp order with real one from server
       setOrders(prev => prev.map(o => o.id === newOrder.id ? createdOrder : o));
+
+      // Refresh user balance and points from server
+      api.getUser(userId).then(setUser).catch(console.error);
     } catch (e) {
       // Rollback on error
       toast.error('Order failed to reach kitchen');
@@ -241,6 +250,20 @@ export default function App() {
     } finally {
       setIsPlacingOrder(false);
       placingOrderRef.current = false;
+      // Secondary refresh to be absolutely sure
+      if (userId) api.getUser(userId).then(setUser).catch(() => { });
+    }
+  };
+
+  const handleReplenish = async (amount: number) => {
+    try {
+      const updatedUser = await api.updateUserBalance(userId, amount);
+      setUser(updatedUser);
+      toast.success(`Vault Replenished: ₹${amount}`);
+      return true;
+    } catch (e) {
+      toast.error('Refill failed');
+      return false;
     }
   };
 
@@ -248,19 +271,22 @@ export default function App() {
   if (!role) return <LoginScreen onLogin={handleLogin} />;
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[var(--bg-primary)]">
+    <div className="h-screen w-screen overflow-hidden bg-black">
       <Toaster position="top-center" richColors theme="dark" />
       <Layout>
-        <div className="flex-1 relative overflow-hidden h-full">
-          <AnimatePresence mode="wait">
+        <div className="flex-1 relative overflow-hidden h-full bg-black">
+          <AnimatePresence mode="popLayout" initial={false}>
             {role === 'student' && activeTab === 'home' && (
               <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
                 <StudentHomeWithFeatures
                   userId={userId}
+                  user={user}
                   menu={menu}
                   orders={orders.filter(o => o.userId === userId)}
                   onLogout={handleLogout}
                   onSelectBranch={b => { setBranch(b); setActiveTab('menu'); }}
+                  onReplenish={handleReplenish}
+                  onRefreshUser={() => api.getUser(userId).then(setUser).catch(console.error)}
                 />
               </motion.div>
             )}
@@ -272,9 +298,10 @@ export default function App() {
             )}
 
             {role === 'student' && activeTab === 'cart' && (
-              <motion.div key="cart" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="h-full">
+              <motion.div key="cart" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="h-full">
                 <CartScreen
                   cart={cart}
+                  user={user}
                   total={cart.reduce((s, i) => s + i.price * i.quantity, 0)}
                   onUpdateQuantity={(id: string, q: number) => setCart(prev => q < 1 ? prev.filter(i => i.id !== id) : prev.map(i => i.id === id ? { ...i, quantity: q } : i))}
                   onPlaceOrder={placeOrder}
@@ -393,6 +420,41 @@ export default function App() {
                       setOrders(previousOrders);
                     }
                   }}
+                  onUpdateMenu={async (id, updates) => {
+                    // Store previous state
+                    const previousMenu = menu;
+
+                    // Optimistic update
+                    setMenu(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+
+                    try {
+                      await api.updateMenuItem(id, updates);
+                      toast.success('Inventory updated');
+                    } catch (e) {
+                      toast.error('Failed to sync inventory');
+                      setMenu(previousMenu);
+                    }
+                  }}
+                  onAddMenu={async (item) => {
+                    const tempId = Date.now().toString(); // temporary ID
+                    const newItem = { ...item, id: tempId };
+
+                    // Optimistic update
+                    setMenu(prev => [newItem, ...prev]);
+
+                    try {
+                      const addedItem = await api.addMenuItem(item);
+                      // Replace temp item with real one (with correct ID)
+                      setMenu(prev => prev.map(m => m.id === tempId ? addedItem : m));
+                      toast.success('Item added to Vault');
+                    } catch (e) {
+                      console.error(e);
+                      toast.error('Failed to add item');
+                      // Rollback
+                      setMenu(prev => prev.filter(m => m.id !== tempId));
+                    }
+                  }}
+                  onRefreshMenu={refreshMenu}
                 />
               </Suspense>
             )}

@@ -1,0 +1,25 @@
+{
+    "token": "A002",
+    "userId": "test_student_456",
+    "items": [
+        {
+            "id": "pizza-margherita",
+            "name": "Margherita Pizza",
+            "price": 299,
+            "quantity": 1,
+            "category": "Pizza",
+            "image": "🍕"
+        },
+        {
+            "id": "coke",
+            "name": "Coca Cola",
+            "price": 50,
+            "quantity": 2,
+            "category": "Beverages",
+            "image": "🥤"
+        }
+    ],
+    "status": "placed",
+    "totalAmount": 399,
+    "branch": "A"
+}

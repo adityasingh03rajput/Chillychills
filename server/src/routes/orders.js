@@ -127,13 +127,21 @@ router.put('/:id', async (req, res) => {
 
             // Case 3: Manual refund approved by manager
             if (order.refundRequest?.status === 'approved' && previousOrder.refundRequest?.status !== 'approved') {
-                const manualRefundAmount = order.refundRequest.refundAmount || order.totalAmount;
-                await MonthlyBalance.updateAfterOrder(order, 'refunded');
+                // Prevent double refunding if auto-refund already happened on cancellation/rejection
+                const wasAutoRefunded = ['cancelled', 'rejected'].includes(previousOrder.status);
 
-                await User.findOneAndUpdate(
-                    { id: order.userId },
-                    { $inc: { balance: manualRefundAmount } }
-                );
+                if (!wasAutoRefunded) {
+                    const manualRefundAmount = order.refundRequest.refundAmount || order.totalAmount;
+                    await MonthlyBalance.updateAfterOrder(order, 'refunded');
+
+                    await User.findOneAndUpdate(
+                        { id: order.userId },
+                        { $inc: { balance: manualRefundAmount } }
+                    );
+                    console.log(`💰 Manager manual refund granted: ₹${manualRefundAmount} to user ${order.userId}`);
+                } else {
+                    console.log(`⚠️ Manual refund skipped: User was already auto-refunded upon cancellation.`);
+                }
             }
         }
 

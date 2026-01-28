@@ -4,6 +4,11 @@ import { Server } from 'socket.io';
 import { createServer } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Import routes
 import ordersRouter from './routes/orders.js';
@@ -77,9 +82,14 @@ app.use('/api/giftcards', giftcardsRouter);
 app.use('/api/social', socialRouter);
 app.use('/api/auth', authRouter);
 
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../../build')));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(__dirname, '../../build/index.html'));
 });
 
 // Error handler

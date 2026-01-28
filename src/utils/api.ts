@@ -1,7 +1,8 @@
 import { MenuItem, Order } from './types';
 
 // Node.js backend URL
-const BASE_URL = 'http://localhost:3001/api';
+const isDev = window.location.port === '3000';
+const BASE_URL = isDev ? 'http://localhost:3001/api' : '/api';
 
 const headers = {
   'Content-Type': 'application/json',

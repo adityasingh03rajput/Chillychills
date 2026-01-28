@@ -118,7 +118,8 @@ export default function App() {
     fetchOrders();
 
     // Setup Socket.io connection to Node.js backend
-    socket = io('http://localhost:3001', {
+    const socketUrl = window.location.port === '3000' ? 'http://localhost:3001' : window.location.origin;
+    socket = io(socketUrl, {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 10

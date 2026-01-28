@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { ChefHat, GraduationCap, ArrowRight, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
+import { ChefHat, GraduationCap, ArrowRight, Loader2, Sparkles, ShieldCheck, Github } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChillyLogo } from '../components/ChillyLogo';
 import { api } from '../utils/api';
@@ -159,6 +159,29 @@ export const LoginScreen = ({ onLogin }: { onLogin: (role: string, userId: strin
               {authMode === 'login' ? 'Authenticate' : 'Initiate Sequence'} <ArrowRight size={18} strokeWidth={3} className="ml-2" />
             </Button>
           </form>
+
+          {activeTab === 'student' && (
+            <div className="mt-8 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="h-px flex-1 bg-white/5" />
+                <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Social Node</span>
+                <div className="h-px flex-1 bg-white/5" />
+              </div>
+
+              <button
+                onClick={() => {
+                  toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
+                    loading: 'Syncing with GitHub...',
+                    success: 'GitHub Verified - Node Linked',
+                    error: 'Handshake Failed'
+                  });
+                }}
+                className="w-full h-[56px] bg-white text-black rounded-xl flex items-center justify-center gap-3 font-black uppercase text-[12px] tracking-widest active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              >
+                <Github size={20} /> Continue with GitHub
+              </button>
+            </div>
+          )}
 
           {activeTab === 'student' && (
             <div className="mt-10 text-center">

@@ -145,10 +145,10 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ onClose }) =
             {/* Header (56dp Material App Bar) */}
             <div className="h-[64px] px-6 border-b border-white/10 flex items-center justify-between shrink-0 bg-stone-900/50 backdrop-blur-xl">
                 <div>
-                    <h2 className="text-[20px] font-black text-white tracking-tight uppercase leading-none">Fiscal Ledger</h2>
+                    <h2 className="text-[20px] font-black text-white tracking-tight uppercase leading-none">Earnings Report</h2>
                     <div className="flex items-center gap-1.5 mt-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-green)] animate-pulse" />
-                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">{getMonthName(balance.month)} {balance.year} Cycle</p>
+                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">{getMonthName(balance.month)} {balance.year} Summary</p>
                     </div>
                 </div>
 
@@ -172,14 +172,14 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ onClose }) =
                         className="flex-1 h-[56px] bg-emerald-600 text-white rounded-xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-emerald-900/20"
                     >
                         <FileSpreadsheet size={18} />
-                        <span className="text-[12px] font-black uppercase tracking-widest">Excel Link</span>
+                        <span className="text-[12px] font-black uppercase tracking-widest">Excel File</span>
                     </button>
                     <button
                         onClick={handleExportPDF}
                         className="flex-1 h-[56px] bg-red-600 text-white rounded-xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-red-900/20"
                     >
                         <FileText size={18} />
-                        <span className="text-[12px] font-black uppercase tracking-widest">PDF Export</span>
+                        <span className="text-[12px] font-black uppercase tracking-widest">PDF File</span>
                     </button>
                 </div>
 
@@ -193,45 +193,49 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ onClose }) =
                     />
                     <StatCard
                         icon={ShoppingCart}
-                        label="Order Mass"
+                        label="Total Orders"
                         value={balance.totalOrders}
                         color="from-blue-500 to-indigo-600"
                     />
                     <StatCard
                         icon={Award}
-                        label="Success Delta"
+                        label="Success Rate"
                         value={`${completionRate}%`}
                         trend={completionRate >= 80 ? 12 : -8}
                         color="from-purple-500 to-pink-600"
                     />
                     <StatCard
                         icon={Users}
-                        label="Avg Flow"
+                        label="Avg. per Order"
                         value={formatCurrency(balance.averageOrderValue)}
                         color="from-orange-500 to-red-600"
                     />
                 </div>
+                {/* Explanation helper */}
+                <p className="text-[10px] text-white/30 font-medium px-1">
+                    * Avg. per Order: The average amount spent on each order this month.
+                </p>
 
                 {/* Status Breakdown Action Block */}
                 <div className="bg-stone-900 p-6 rounded-xl border border-white/5 shadow-xl">
                     <div className="flex items-center gap-3 mb-6">
                         <ShoppingCart size={18} className="text-[var(--accent-orange)]" />
-                        <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Transmission Flow</h3>
+                        <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Order Status</h3>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
                         <div className="text-center p-4 rounded-xl bg-white/5 border border-white/5">
                             <div className="text-[20px] font-black text-[var(--accent-green)]">{balance.completedOrders}</div>
-                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Synced</div>
+                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Done</div>
                         </div>
                         <div className="text-center p-4 rounded-xl bg-white/5 border border-white/5">
                             <div className="text-[20px] font-black text-red-500">{balance.cancelledOrders}</div>
-                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Revoked</div>
+                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Cancelled</div>
                         </div>
                         <div className="text-center p-4 rounded-xl bg-white/5 border border-white/5">
                             <div className="text-[18px] font-black text-[var(--accent-orange)]">
                                 {formatCurrency(balance.refundedAmount)}
                             </div>
-                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Refund</div>
+                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Refunded</div>
                         </div>
                     </div>
                 </div>
@@ -241,7 +245,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ onClose }) =
                     <div className="bg-stone-900 p-6 rounded-xl border border-white/5 shadow-xl">
                         <div className="flex items-center gap-3 mb-6">
                             <DollarSign size={18} className="text-[var(--accent-green)]" />
-                            <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Revenue Density</h3>
+                            <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Sales by Category</h3>
                         </div>
                         <div className="space-y-6">
                             {categoryEntries.map(([category, revenue], index) => {
@@ -274,7 +278,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ onClose }) =
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
                             <div className="w-1 h-6 bg-[var(--accent-orange)] rounded-full" />
-                            <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Temporal Load</h3>
+                            <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Busy Hours</h3>
                         </div>
                         <div className="grid grid-cols-1 gap-3">
                             {peakHoursEntries.map(([hour, count]) => (
@@ -285,7 +289,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ onClose }) =
                                         </div>
                                         <span className="text-[16px] font-black text-white/40 uppercase">{hour}</span>
                                     </div>
-                                    <span className="text-[18px] font-black text-white tabular-nums">{count} TRANSMISSIONS</span>
+                                    <span className="text-[18px] font-black text-white tabular-nums">{count} ORDERS</span>
                                 </div>
                             ))}
                         </div>
@@ -293,7 +297,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ onClose }) =
                 )}
 
                 <div className="pb-10 opacity-20 text-[10px] font-black uppercase tracking-[0.4em] text-center">
-                    End of Financial Record
+                    End of Monthly Report
                 </div>
             </div>
         </div>

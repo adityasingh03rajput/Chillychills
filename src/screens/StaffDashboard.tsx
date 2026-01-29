@@ -56,9 +56,9 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
         <div>
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-orange)] animate-pulse" />
-            <h2 className="text-[20px] font-black text-white uppercase tracking-tight leading-none">Kitchen Live</h2>
+            <h2 className="text-[20px] font-black text-white uppercase tracking-tight leading-none">Kitchen Orders</h2>
           </div>
-          <p className="text-[12px] font-black text-white/30 uppercase tracking-widest mt-2">{counts.all} Active Nodes</p>
+          <p className="text-[12px] font-black text-white/30 uppercase tracking-widest mt-2">{counts.all} Active Orders</p>
         </div>
 
         <div className="flex gap-2">
@@ -112,7 +112,7 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
           {filteredOrders.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-48 opacity-20 text-center">
               <CheckCircle2 size={48} className="mb-4 text-[var(--accent-green)]" />
-              <p className="text-[12px] font-black uppercase tracking-widest">Kitchen Matrix Optimal</p>
+              <p className="text-[12px] font-black uppercase tracking-widest">All orders done!</p>
             </motion.div>
           ) : (
             filteredOrders.map(order => (
@@ -158,14 +158,14 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
                     <div className="w-full space-y-3">
                       <Input
                         autoFocus
-                        placeholder="VOID REASON..."
+                        placeholder="REASON FOR CANCELLING..."
                         className="h-[56px] rounded-xl bg-black border-white/5 text-[14px] font-black uppercase px-4 text-white"
                         value={rejectReason}
                         onChange={e => setRejectReason(e.target.value)}
                       />
                       <div className="flex gap-2">
-                        <button className="flex-1 h-[56px] rounded-xl font-black uppercase text-[12px] bg-red-600 text-white" onClick={() => { handleStatusUpdate(order.id, 'rejected', rejectReason); setRejectId(null); setRejectReason(''); }}>Confirm Void</button>
-                        <button className="px-6 h-[56px] rounded-xl font-black uppercase text-[12px] bg-stone-800 text-white" onClick={() => setRejectId(null)}>Abort</button>
+                        <button className="flex-1 h-[56px] rounded-xl font-black uppercase text-[12px] bg-red-600 text-white" onClick={() => { handleStatusUpdate(order.id, 'rejected', rejectReason); setRejectId(null); setRejectReason(''); }}>Cancel Order</button>
+                        <button className="px-6 h-[56px] rounded-xl font-black uppercase text-[12px] bg-stone-800 text-white" onClick={() => setRejectId(null)}>Go Back</button>
                       </div>
                     </div>
                   ) : (
@@ -182,7 +182,7 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
                             onClick={() => handleStatusUpdate(order.id, 'preparing')}
                             className="flex-1 h-[56px] rounded-xl bg-white text-black text-[14px] font-black uppercase tracking-widest shadow-xl shadow-white/10 active:scale-95 transition-all"
                           >
-                            Initiate Prep
+                            Start Cooking
                           </button>
                         </>
                       )}
@@ -199,7 +199,7 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
                           onClick={() => handleStatusUpdate(order.id, 'picked_up')}
                           className="w-full h-[56px] bg-[var(--accent-green)] text-white rounded-xl text-[14px] font-black uppercase tracking-widest shadow-xl shadow-green-500/20 active:scale-95 transition-all"
                         >
-                          Complete Serve
+                          Order Handed Over
                         </button>
                       )}
                     </>

@@ -144,7 +144,10 @@ export default function App() {
           if (window.navigator.vibrate) window.navigator.vibrate([200, 100, 200]);
         }
 
-        setOrders(prev => [order, ...prev]);
+        setOrders(prev => {
+          if (prev.some(o => o.id === order.id)) return prev;
+          return [order, ...prev];
+        });
         previousOrderIds.add(order.id);
       }
     });
@@ -197,7 +200,7 @@ export default function App() {
   };
 
   const addToCart = (item: MenuItem) => {
-    setCart(prev => {
+    setCart((prev: CartItem[]) => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
       return [...prev, { ...item, quantity: 1 }];
@@ -231,21 +234,33 @@ export default function App() {
     toast.success(`Order Placed! Token: ${token}`);
 
     // Add order to local state immediately
-    setOrders(prev => [...prev, newOrder as any]);
+    setOrders((prev: Order[]) => [...prev, newOrder as any]);
 
     try {
       // API call in background
-      const createdOrder = await api.createOrder({ items: cart.length > 0 ? cart : newOrder.items, totalAmount: total, token, branch: branch || 'A', userId, ...details });
+      const createdOrder = await api.createOrder({
+        items: cart.length > 0 ? cart : newOrder.items,
+        totalAmount: total,
+        token,
+        branch: branch || 'A',
+        userId,
+        ...details
+      });
 
-      // Replace temp order with real one from server
-      setOrders(prev => prev.map(o => o.id === newOrder.id ? createdOrder : o));
+      // Replace temp order with real one from server, handling potential socket race condition
+      setOrders((prev: Order[]) => {
+        if (prev.some(o => o.id === createdOrder.id)) {
+          return prev.filter(o => o.id !== newOrder.id);
+        }
+        return prev.map(o => o.id === newOrder.id ? createdOrder : o);
+      });
 
       // Refresh user balance and points from server
       api.getUser(userId).then(setUser).catch(console.error);
     } catch (e) {
       // Rollback on error
       toast.error('Order failed to reach kitchen');
-      setOrders(prev => prev.filter(o => o.id !== newOrder.id));
+      setOrders((prev: Order[]) => prev.filter(o => o.id !== newOrder.id));
       setCart(newOrder.items);
       setActiveTab('cart');
     } finally {
@@ -265,6 +280,43 @@ export default function App() {
     } catch (e) {
       toast.error('Refill failed');
       return false;
+    }
+  };
+
+  const placeFlashOrder = async (saleId: string, amount: number) => {
+    if (!user || user.balance < amount) {
+      toast.error('Insufficient Funds');
+      return;
+    }
+
+    const token = `R${Math.floor(Math.random() * 900) + 100}`; // 'R' for Rescue
+
+    try {
+      await api.createOrder({
+        userId,
+        branch: 'A',
+        totalAmount: amount,
+        token,
+        status: 'preparing', // Rescued food is already preparing/ready
+        paymentMethod: 'wallet',
+        flashSaleId: saleId,
+        items: [{
+          id: 'flash',
+          name: 'Rescue Deal',
+          price: amount,
+          quantity: 1,
+          isRefundable: false,
+          category: 'Offers',
+          image: '',
+          available: true,
+          description: 'Flash Sale Item',
+          branch: 'A'
+        }]
+      });
+      api.getUser(userId).then(setUser);
+      toast.success('Rescue Successful! +500 Aura');
+    } catch (e) {
+      toast.error('This rescue has expired.');
     }
   };
 
@@ -288,6 +340,7 @@ export default function App() {
                   onSelectBranch={b => { setBranch(b); setActiveTab('menu'); }}
                   onReplenish={handleReplenish}
                   onRefreshUser={() => api.getUser(userId).then(setUser).catch(console.error)}
+                  onRescueOrder={placeFlashOrder}
                 />
               </motion.div>
             )}
@@ -304,7 +357,7 @@ export default function App() {
                   cart={cart}
                   user={user}
                   total={cart.reduce((s, i) => s + i.price * i.quantity, 0)}
-                  onUpdateQuantity={(id: string, q: number) => setCart(prev => q < 1 ? prev.filter(i => i.id !== id) : prev.map(i => i.id === id ? { ...i, quantity: q } : i))}
+                  onUpdateQuantity={(id: string, q: number) => setCart((prev: CartItem[]) => q < 1 ? prev.filter(i => i.id !== id) : prev.map(i => i.id === id ? { ...i, quantity: q } : i))}
                   onPlaceOrder={placeOrder}
                   isPlacingOrder={isPlacingOrder}
                 />
@@ -316,12 +369,36 @@ export default function App() {
                 <OrdersScreen
                   orders={orders.filter(o => o.userId === userId)}
                   onCancelOrder={async id => {
+                    const orderToCancel = orders.find(o => o.id === id);
+                    if (!orderToCancel) return;
+
+                    // Calculate Refundable vs Non-Refundable
+                    const refundableAmount = orderToCancel.items.reduce((sum, item) => {
+                      return sum + (item.isRefundable ? (item.price * item.quantity) : 0);
+                    }, 0);
+
+                    const nonRefundableAmount = orderToCancel.totalAmount - refundableAmount;
+                    const updates: any = { status: 'cancelled' };
+
+                    // If there's a non-refundable portion, request manager approval for THAT amount
+                    if (nonRefundableAmount > 0) {
+                      updates.refundRequest = {
+                        status: 'pending',
+                        reason: 'Non-refundable Item Cancellation',
+                        requestedAt: Date.now(),
+                        refundAmount: nonRefundableAmount, // Only ask for the remainder
+                        cancelledBy: 'user'
+                      };
+                      toast.info('Cancellation under review (Non-refundable items)');
+                    } else {
+                      toast.success('Order Cancelled & Refunded');
+                    }
+
                     // Optimistic update
-                    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'cancelled' as any } : o));
-                    toast.success('Order Cancelled');
+                    setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
 
                     try {
-                      await api.updateOrder(id, { status: 'cancelled' });
+                      await api.updateOrder(id, updates);
                     } catch (error) {
                       toast.error('Failed to cancel order');
                       // Refresh to get correct state
@@ -331,7 +408,7 @@ export default function App() {
                   }}
                   onSubmitFeedback={async (id, f: Feedback) => {
                     // Optimistic update
-                    setOrders(prev => prev.map(o => o.id === id ? { ...o, feedback: f } : o));
+                    setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, feedback: f } : o));
                     toast.success('Thanks for feedback!');
 
                     try {
@@ -339,13 +416,13 @@ export default function App() {
                     } catch (error) {
                       toast.error('Failed to submit feedback');
                       // Rollback
-                      setOrders(prev => prev.map(o => o.id === id ? { ...o, feedback: undefined } : o));
+                      setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, feedback: undefined } : o));
                     }
                   }}
                   onRequestRefund={async (id, r) => {
                     // Optimistic update
                     const refundRequest = { status: 'pending' as const, reason: r, requestedAt: Date.now() };
-                    setOrders(prev => prev.map(o => o.id === id ? { ...o, refundRequest } : o));
+                    setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, refundRequest } : o));
                     toast.success('Refund requested');
 
                     try {
@@ -353,7 +430,7 @@ export default function App() {
                     } catch (error) {
                       toast.error('Failed to request refund');
                       // Rollback
-                      setOrders(prev => prev.map(o => o.id === id ? { ...o, refundRequest: undefined } : o));
+                      setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, refundRequest: undefined } : o));
                     }
                   }}
                 />
@@ -441,12 +518,12 @@ export default function App() {
                     const newItem = { ...item, id: tempId };
 
                     // Optimistic update
-                    setMenu(prev => [newItem, ...prev]);
+                    setMenu((prev: MenuItem[]) => [newItem as MenuItem, ...prev]);
 
                     try {
                       const addedItem = await api.addMenuItem(item);
                       // Replace temp item with real one (with correct ID)
-                      setMenu(prev => prev.map(m => m.id === tempId ? addedItem : m));
+                      setMenu((prev: MenuItem[]) => prev.map(m => m.id === tempId ? addedItem : m));
                       toast.success('Item added to Vault');
                     } catch (e) {
                       console.error(e);

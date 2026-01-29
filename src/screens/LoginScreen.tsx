@@ -128,7 +128,7 @@ export const LoginScreen = ({ onLogin }: { onLogin: (role: string, userId: strin
                     {activeTab === 'staff' ? 'Vault ID' : 'Enrollment Key'}
                   </label>
                   <Input
-                    placeholder={activeTab === 'staff' ? "cook_test_001" : "student_test"}
+                    placeholder={activeTab === 'staff' ? "cook" : "user"}
                     className="h-[56px] bg-black border-white/5 rounded-xl px-5 text-[14px] font-black uppercase tracking-widest"
                     value={activeTab === 'staff' ? staffId : email}
                     onChange={e => activeTab === 'staff' ? setStaffId(e.target.value) : setEmail(e.target.value)}
@@ -198,8 +198,8 @@ export const LoginScreen = ({ onLogin }: { onLogin: (role: string, userId: strin
           <div className="mt-10 pt-8 border-t border-white/5 border-dashed flex gap-3">
             <button
               onClick={() => {
-                if (activeTab === 'student') { setEmail('student_test'); setPassword('student123'); }
-                else { setStaffId('cook_test_001'); setPassword('cook123'); }
+                if (activeTab === 'student') { setEmail('user'); setPassword('123'); }
+                else { setStaffId('cook'); setPassword('123'); }
                 toast.info('Data Link Established');
               }}
               className="flex-1 h-12 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-white/40 uppercase tracking-widest"
@@ -208,7 +208,7 @@ export const LoginScreen = ({ onLogin }: { onLogin: (role: string, userId: strin
             </button>
             {activeTab === 'staff' && (
               <button
-                onClick={() => { setStaffId('manager_test_001'); setPassword('manager123'); toast.info('Admin override detected'); }}
+                onClick={() => { setStaffId('manager'); setPassword('123'); toast.info('Admin override detected'); }}
                 className="flex-1 h-12 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-white/40 uppercase tracking-widest"
               >
                 Manager

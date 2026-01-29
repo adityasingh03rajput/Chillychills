@@ -16,8 +16,8 @@ interface OrdersScreenProps {
 export const OrdersScreen = ({ orders, onCancelOrder, onRequestRefund, onSubmitFeedback }: OrdersScreenProps) => {
    const [tokenSearch, setTokenSearch] = useState('');
 
-   const activeOrders = orders.filter(o => !['completed', 'cancelled', 'picked_up', 'rejected'].includes(o.status)).sort((a, b) => b.createdAt - a.createdAt);
-   const pastOrders = orders.filter(o => ['completed', 'cancelled', 'picked_up', 'rejected'].includes(o.status)).sort((a, b) => b.createdAt - a.createdAt);
+   const activeOrders = orders.filter(o => !['completed', 'cancelled', 'picked_up', 'rejected', 'rescued', 'awaiting_rescue'].includes(o.status)).sort((a, b) => b.createdAt - a.createdAt);
+   const pastOrders = orders.filter(o => ['completed', 'cancelled', 'picked_up', 'rejected', 'rescued', 'awaiting_rescue'].includes(o.status)).sort((a, b) => b.createdAt - a.createdAt);
 
    const filteredPastOrders = tokenSearch.trim()
       ? pastOrders.filter(o => o.token?.toLowerCase().includes(tokenSearch.toLowerCase()))
@@ -109,7 +109,7 @@ export const OrdersScreen = ({ orders, onCancelOrder, onRequestRefund, onSubmitF
 
 const ActiveOrderCard = ({ order, onCancel }: { order: Order, onCancel: () => void }) => {
    const steps = ['placed', 'accepted', 'preparing', 'ready'];
-   const isCancellable = order.status === 'placed';
+   const isCancellable = order.status === 'placed' || (order.status === 'preparing' && !order.items.some(i => !i.isRefundable)); // Allow cancel if all items refundable or placed
 
    return (
       <motion.div
@@ -162,7 +162,7 @@ const ActiveOrderCard = ({ order, onCancel }: { order: Order, onCancel: () => vo
                <p className="text-[12px] font-black text-white/30 uppercase tracking-widest mb-1.5 leading-none">Yield Clear</p>
                <p className="text-[24px] font-black text-white tracking-tighter tabular-nums leading-none">₹{order.totalAmount}</p>
             </div>
-            {isCancellable && (
+            {order.status !== 'ready' && (
                <Button onClick={onCancel} variant="none" className="bg-red-500/10 border border-red-500/20 text-red-500 h-12 px-6 rounded-lg text-[12px] font-black uppercase tracking-widest active:bg-red-500/20">
                   Revoke
                </Button>
@@ -179,7 +179,8 @@ const PastOrderCard = ({ order, onRequestRefund, onSubmitFeedback }: any) => {
    const [rating, setRating] = useState(5);
    const [comment, setComment] = useState('');
 
-   const isSuccess = !['cancelled', 'rejected'].includes(order.status);
+   const isSuccess = ['completed', 'picked_up', 'rescued'].includes(order.status);
+   const isResalePending = order.status === 'awaiting_rescue';
 
    return (
       <div className="bg-stone-900 rounded-xl p-5 border border-white/5 relative group transition-all shadow-md">
@@ -187,8 +188,10 @@ const PastOrderCard = ({ order, onRequestRefund, onSubmitFeedback }: any) => {
             <div>
                <div className="flex items-center gap-3 mb-1.5">
                   <h4 className="text-white font-black text-[20px] tracking-tight">#{order.token}</h4>
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${isSuccess ? 'bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                     {order.status}
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${isSuccess ? 'bg-[var(--accent-green)]/10 text-[var(--accent-green)] border border-[var(--accent-green)]/20' :
+                     isResalePending ? 'bg-[var(--accent-orange)]/10 text-[var(--accent-orange)] border border-[var(--accent-orange)]/20' :
+                        'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                     {order.status === 'awaiting_rescue' ? 'LISTED FOR RESALE' : order.status}
                   </span>
                </div>
                <p className="text-white/30 text-[12px] font-black uppercase tracking-widest opacity-60">

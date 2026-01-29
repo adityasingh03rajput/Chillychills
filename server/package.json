@@ -18,11 +18,12 @@
     "author": "Chilly Chills",
     "license": "MIT",
     "dependencies": {
+        "cloudinary": "^2.9.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.1",
         "express": "^4.18.2",
         "mongoose": "^8.1.0",
-        "socket.io": "^4.6.1",
-        "cors": "^2.8.5",
-        "dotenv": "^16.4.1"
+        "socket.io": "^4.6.1"
     },
     "engines": {
         "node": ">=18.0.0"

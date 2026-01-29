@@ -13,6 +13,8 @@ import { ChillyLogo } from '../components/ChillyLogo';
 import { FinanceDashboard } from '../components/FinanceDashboard';
 import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
 import { api } from '../utils/api';
+import { SelfieManager } from '../components/SelfieManager';
+import { Camera } from 'lucide-react';
 
 interface ManagerDashboardProps {
   orders: Order[];
@@ -25,7 +27,7 @@ interface ManagerDashboardProps {
 }
 
 export const ManagerDashboard = ({ orders, menu, onUpdateOrder, onUpdateMenu, onAddMenu, onRefreshMenu, onLogout }: ManagerDashboardProps) => {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'refunds' | 'gifts' | 'users' | 'logs'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'menu' | 'refunds' | 'gifts' | 'users' | 'logs' | 'snaps'>('analytics');
   const [giftCards, setGiftCards] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [showFinanceDashboard, setShowFinanceDashboard] = useState(false);
@@ -48,18 +50,29 @@ export const ManagerDashboard = ({ orders, menu, onUpdateOrder, onUpdateMenu, on
   const [showEditMenu, setShowEditMenu] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
 
-  // Stats Logic
-  const validOrders = orders.filter(o => !['cancelled', 'rejected'].includes(o.status));
-  const totalRevenue = validOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  // Stats Logic - Filtered by Current Month to match Fiscal Ledger
+  const now = new Date();
+  const currentMonthOrders = orders.filter(o => {
+    const orderDate = new Date(o.createdAt);
+    return orderDate.getMonth() === now.getMonth() &&
+      orderDate.getFullYear() === now.getFullYear();
+  });
+
+  const validOrders = currentMonthOrders.filter(o => !['cancelled', 'rejected'].includes(o.status));
+  const totalRevenue = validOrders.reduce((sum, o) => {
+    const refundAdjust = (o.refundRequest?.status === 'approved') ? (o.refundRequest.refundAmount || o.totalAmount) : 0;
+    return sum + (o.totalAmount - refundAdjust);
+  }, 0);
   const pendingRefunds = orders.filter(o => o.refundRequest?.status === 'pending');
 
   const tabs = [
-    { id: 'analytics', label: 'Hub', icon: BarChart3 },
-    { id: 'menu', label: 'Vault', icon: Package },
-    { id: 'refunds', label: 'Flow', icon: Receipt, badge: pendingRefunds.length },
+    { id: 'analytics', label: 'Overview', icon: BarChart3 },
+    { id: 'menu', label: 'Menu', icon: Package },
+    { id: 'refunds', label: 'Refunds', icon: Receipt, badge: pendingRefunds.length },
     { id: 'gifts', label: 'Gifts', icon: Gift },
     { id: 'users', label: 'Users', icon: Users },
-    { id: 'logs', label: 'Scan', icon: History },
+    { id: 'logs', label: 'History', icon: History },
+    { id: 'snaps', label: 'Snaps', icon: Camera },
   ];
 
   React.useEffect(() => {
@@ -80,7 +93,7 @@ export const ManagerDashboard = ({ orders, menu, onUpdateOrder, onUpdateMenu, on
           resolvedAt: Date.now()
         }
       });
-      toast.success(action === 'approved' ? 'Capital Reclaimed' : 'Claim Rejected');
+      toast.success(action === 'approved' ? 'Refund Approved' : 'Refund Refused');
     } catch (e) {
       toast.error('Sync failed');
     }
@@ -367,6 +380,12 @@ export const ManagerDashboard = ({ orders, menu, onUpdateOrder, onUpdateMenu, on
                   </div>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'snaps' && (
+            <motion.div key="snaps" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <SelfieManager />
             </motion.div>
           )}
 

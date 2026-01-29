@@ -20,7 +20,7 @@ export interface CartItem extends MenuItem {
   notes?: string;
 }
 
-export type OrderStatus = 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'picked_up' | 'cancelled' | 'rejected';
+export type OrderStatus = 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'picked_up' | 'cancelled' | 'rejected' | 'awaiting_rescue' | 'rescued';
 
 export interface Feedback {
   rating: number;
@@ -53,6 +53,7 @@ export interface Order {
   feedback?: Feedback;
   refundRequest?: RefundRequest;
   rejectionReason?: string;
+  flashSaleId?: string;
 }
 
 export interface User {

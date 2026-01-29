@@ -11,7 +11,7 @@ export const CartScreen = ({ cart, onUpdateQuantity, onPlaceOrder, total, isPlac
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'wallet'>('upi');
   const [scheduledTime, setScheduledTime] = useState<string>('');
 
-  const taxes = Math.ceil(total * 0.05);
+  const taxes = 0;
   const grandTotal = total + taxes;
   const pointsToEarn = Math.floor(total * 0.05);
   const walletBalance = user?.balance || 0;
@@ -149,10 +149,12 @@ export const CartScreen = ({ cart, onUpdateQuantity, onPlaceOrder, total, isPlac
 
         {/* 12sp Caption Summary Details */}
         <div className="py-4 border-y border-white/5 border-dashed space-y-2">
+          {/* 
           <div className="flex justify-between items-center opacity-40">
             <span className="text-[12px] font-black uppercase tracking-widest text-white">Transmission Fee</span>
             <span className="text-[14px] font-black tabular-nums text-white">₹{taxes}</span>
-          </div>
+          </div> 
+          */}
           <div className="flex justify-between items-center text-[var(--accent-green)]">
             <div className="flex items-center gap-2">
               <Sparkles size={14} />

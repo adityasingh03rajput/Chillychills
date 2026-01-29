@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Gift, Send, Copy, Star, Users, Award, CreditCard, User, Loader2, Heart, Share2, Sparkles, TrendingUp, ShieldCheck, ChevronRight, MessageSquare, Target, Zap, Info } from 'lucide-react';
+import { X, Gift, Send, Copy, Star, Users, Award, CreditCard, User, Loader2, Heart, Share2, Sparkles, TrendingUp, ShieldCheck, ChevronRight, MessageSquare, Target, Zap, Info, Wallet } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { toast } from 'sonner';
@@ -35,7 +35,7 @@ export const FeatureModal = ({ isOpen, onClose, title, children }: { isOpen: boo
                         <h3 className="text-[20px] font-black text-white tracking-tight uppercase leading-none">{title}</h3>
                         <div className="flex items-center gap-1.5 mt-1.5">
                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-orange)]" />
-                           <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Live Channel</span>
+                           <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Online</span>
                         </div>
                      </div>
                      <button
@@ -86,7 +86,7 @@ export const RecommendedList = ({ userId }: { userId: string }) => {
                <TrendingUp size={24} />
             </div>
             <div>
-               <h4 className="font-black text-white text-[18px] uppercase tracking-tight">Social Relay</h4>
+               <h4 className="font-black text-white text-[18px] uppercase tracking-tight">Friends Buzz</h4>
                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest leading-none mt-1">Global Signals</p>
             </div>
          </div>
@@ -94,7 +94,7 @@ export const RecommendedList = ({ userId }: { userId: string }) => {
          {recommendations.length === 0 ? (
             <div className="bg-[#111111] p-10 rounded-2xl text-center border border-white/5">
                <Users size={32} className="mx-auto mb-4 opacity-10" />
-               <p className="text-[12px] font-black text-white/20 uppercase tracking-widest">Network Silent</p>
+               <p className="text-[12px] font-black text-white/20 uppercase tracking-widest">Nothing here yet</p>
             </div>
          ) : recommendations.map((rec, i) => (
             <motion.div
@@ -157,7 +157,7 @@ export const GiftCardStore = ({ userId, onActionSuccess }: { userId: string, onA
       try {
          const res = await api.purchaseGiftCard(userId, targetUserId, val, bonus);
          setGeneratedCode(res.code);
-         toast.success('Protocol Initiated');
+         toast.success('Sending Gift...');
          onActionSuccess?.();
       } catch (e) {
          toast.error('Gifting Failed');
@@ -171,11 +171,11 @@ export const GiftCardStore = ({ userId, onActionSuccess }: { userId: string, onA
       setLoading(true);
       try {
          const res = await api.claimGiftCard(code, userId);
-         toast.success('Vault Updated', { description: `₹${res.amount + res.bonus} restored.` });
+         toast.success('Wallet Updated', { description: `₹${res.amount + res.bonus} added.` });
          setCode('');
          onActionSuccess?.();
       } catch (e: any) {
-         toast.error(e.message || 'Deny Signal');
+         toast.error(e.message || 'Request Failed');
       } finally {
          setLoading(false);
       }
@@ -189,25 +189,25 @@ export const GiftCardStore = ({ userId, onActionSuccess }: { userId: string, onA
                animate={{ opacity: 1, scale: 1 }}
                className="bg-[#111111] border border-white/10 p-6 rounded-2xl text-center shadow-2xl mb-6"
             >
-               <p className="text-[10px] font-black text-[var(--accent-orange)] uppercase tracking-[0.2em] mb-4">Transmission Result</p>
+               <p className="text-[10px] font-black text-[var(--accent-orange)] uppercase tracking-[0.2em] mb-4">GIFT CODE GENERATED</p>
                <div className="flex items-center justify-center gap-4 h-[56px] bg-black rounded-xl border border-white/5 px-4 mb-4">
                   <h3 className="text-[20px] font-black text-white tracking-[0.2em] font-mono">{generatedCode}</h3>
                   <button onClick={() => { navigator.clipboard.writeText(generatedCode); toast.success('Copied'); }} className="p-2 text-white/40 active:text-white">
                      <Copy size={18} />
                   </button>
                </div>
-               <Button variant="white" className="h-[56px] w-full rounded-xl" onClick={() => setGeneratedCode(null)}>Reset Terminal</Button>
+               <Button variant="white" className="h-[56px] w-full rounded-xl" onClick={() => setGeneratedCode(null)}>Done</Button>
             </motion.div>
          )}
 
          <section>
             <div className="flex justify-between items-end mb-6 px-1">
-               <h4 className="font-black text-white text-[18px] uppercase tracking-tight">Generate Code</h4>
-               <span className="text-[10px] font-black text-[var(--accent-orange)] uppercase tracking-widest px-2 py-0.5 rounded bg-white/5 leading-none">Elite Mode</span>
+               <h4 className="font-black text-white text-[18px] uppercase tracking-tight">Gift a Friend</h4>
+               <span className="text-[10px] font-black text-[var(--accent-orange)] uppercase tracking-widest px-2 py-0.5 rounded bg-white/5 leading-none">Gift Mode</span>
             </div>
 
             <div className="bg-[#111111] p-5 rounded-2xl border border-white/5 mb-6 shadow-xl relative">
-               <label className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-3 block">Recipient Search Terminal</label>
+               <label className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-3 block">Find Friend</label>
 
                {/* Search Interface */}
                <div className="relative">
@@ -251,7 +251,7 @@ export const GiftCardStore = ({ userId, onActionSuccess }: { userId: string, onA
                               </button>
                            )) : (
                               <div className="h-[56px] flex items-center justify-center text-[10px] font-black text-white/20 uppercase">
-                                 No matching nodes found
+                                 No matching users found
                               </div>
                            )}
                         </motion.div>
@@ -290,7 +290,7 @@ export const GiftCardStore = ({ userId, onActionSuccess }: { userId: string, onA
 
          <section className="bg-[#111111] p-6 rounded-2xl border border-white/5 shadow-xl">
             <h4 className="font-black text-white text-[12px] uppercase tracking-widest mb-4 flex items-center gap-2">
-               <ShieldCheck size={16} className="text-[var(--accent-green)]" /> Redeem Terminal
+               <ShieldCheck size={16} className="text-[var(--accent-green)]" /> Redeem Gift
             </h4>
             <div className="flex gap-2">
                <Input
@@ -310,7 +310,7 @@ export const GiftCardStore = ({ userId, onActionSuccess }: { userId: string, onA
             </div>
             <div className="mt-6 pt-6 border-t border-white/5 flex items-center gap-4 h-[56px] px-4 bg-black/50 rounded-xl border border-white/5 select-none">
                <Info size={16} className="text-[var(--accent-orange)] shrink-0" />
-               <p className="text-[10px] font-black text-white/30 uppercase leading-none">Lost signal? Ask <span className="text-white">Help Desk Offline</span></p>
+               <p className="text-[10px] font-black text-white/30 uppercase leading-none">Need help? Ask <span className="text-white">Offline Support</span></p>
             </div>
          </section>
       </div>
@@ -327,20 +327,20 @@ export const UserProfile = ({ userId, user, onLogout }: { userId: string, user: 
                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`} alt="avatar" className="w-full h-full rounded-full object-cover" />
                </div>
             </div>
-            <h3 className="text-[28px] font-black text-white tracking-tight uppercase leading-none">{user?.name || 'Authorized Client'}</h3>
+            <h3 className="text-[28px] font-black text-white tracking-tight uppercase leading-none">{user?.name || 'Valued Member'}</h3>
             <div className="mt-3 h-[40px] px-4 bg-white/5 border border-white/10 rounded-xl flex items-center gap-2">
                <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-green)] animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-               <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Access Key: <span className="text-white">{userId}</span></span>
+               <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Member ID: <span className="text-white">{userId}</span></span>
             </div>
          </div>
 
          <div className="grid grid-cols-2 gap-2">
             <div className="h-[80px] bg-[#111111] rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1 shadow-lg">
-               <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Vault Credit</span>
+               <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Total Balance</span>
                <span className="text-[22px] font-black text-[var(--accent-green)] tabular-nums">₹{user?.balance || 0}</span>
             </div>
             <div className="h-[80px] bg-[#111111] rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1 shadow-lg">
-               <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Energy Factor</span>
+               <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Points Gained</span>
                <span className="text-[22px] font-black text-[var(--accent-orange)] tabular-nums">{user?.points || 0}</span>
             </div>
          </div>
@@ -349,6 +349,7 @@ export const UserProfile = ({ userId, user, onLogout }: { userId: string, user: 
             <div className="p-6 space-y-4">
                {[
                   { label: 'Identity', val: 'C7-AUTH-SEC', icon: User },
+                  { label: 'Wallet Balance', val: `₹${user?.balance || 0}`, icon: Wallet },
                   { label: 'Neural Link', val: '+91 98765 43210', icon: CreditCard },
                   { label: 'Hierarchy', val: 'Level Elite', icon: ShieldCheck }
                ].map((item, i) => (
@@ -365,7 +366,7 @@ export const UserProfile = ({ userId, user, onLogout }: { userId: string, user: 
                onClick={onLogout}
                className="w-full h-[64px] bg-red-600/5 text-red-500 text-[12px] font-black uppercase tracking-[0.2em] border-t border-white/5 active:bg-red-600/10 transition-colors"
             >
-               Disconnect Session
+               Log Out
             </button>
          </div>
       </div>
@@ -386,7 +387,7 @@ export const CollectionList = ({ userId }: { userId: string }) => {
    return (
       <div className="space-y-8">
          <section>
-            <h4 className="text-[14px] font-black text-white uppercase tracking-widest mb-6 px-1">Neural Tokens</h4>
+            <h4 className="text-[14px] font-black text-white uppercase tracking-widest mb-6 px-1">My Badges</h4>
             <div className="grid grid-cols-2 gap-2">
                {data.badges.map((b: any) => (
                   <div key={b.id} className="h-[120px] bg-[#111111] rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-3 shadow-xl">
@@ -399,7 +400,7 @@ export const CollectionList = ({ userId }: { userId: string }) => {
             </div>
          </section>
          <section>
-            <h4 className="text-[14px] font-black text-white uppercase tracking-widest mb-6 px-1">Progression Log</h4>
+            <h4 className="text-[14px] font-black text-white uppercase tracking-widest mb-6 px-1">Achievements</h4>
             <div className="space-y-2">
                {data.achievements.map((a: any) => (
                   <div key={a.id} className={`h-[56px] px-4 rounded-xl border flex items-center gap-4 ${a.completed ? 'bg-[#111111] border-white/10 shadow-lg' : 'bg-black/50 border-white/5 opacity-40'}`}>
@@ -429,10 +430,10 @@ export const FeedbackForm = ({ userId }: { userId: string }) => {
       setLoading(true);
       try {
          await api.submitFeedback({ userId, comment: text, rating, createdAt: Date.now() });
-         toast.success('Report Logged');
+         toast.success('Feedback Sent');
          setText('');
       } catch (e) {
-         toast.error('Sync Failed');
+         toast.error('Submit Failed');
       } finally {
          setLoading(false);
       }
@@ -441,7 +442,7 @@ export const FeedbackForm = ({ userId }: { userId: string }) => {
    return (
       <div className="space-y-6">
          <div className="bg-[#111111] p-6 rounded-2xl border border-white/5 shadow-2xl">
-            <h4 className="text-[14px] font-black text-white uppercase tracking-widest mb-8 text-center px-1">Quality Survey</h4>
+            <h4 className="text-[14px] font-black text-white uppercase tracking-widest mb-8 text-center px-1">Give Feedback</h4>
             <div className="flex justify-center gap-2 mb-10">
                {[1, 2, 3, 4, 5].map(s => (
                   <button
@@ -466,8 +467,72 @@ export const FeedbackForm = ({ userId }: { userId: string }) => {
                isLoading={loading}
                disabled={!text}
             >
-               Execute Protocol
+               Submit Now
             </Button>
+         </div>
+      </div>
+   );
+};
+
+// --- FLASH SALE LIST (Rescue Food) ---
+export const FlashSaleList = ({ userId, onRescue }: { userId: string, onRescue: (saleId: string, amount: number) => void }) => {
+   const [sales, setSales] = useState<any[]>([]);
+
+   const fetchSales = async () => {
+      try {
+         const data = await api.getFlashSales();
+         setSales(data);
+      } catch (e) {
+         console.error(e);
+      }
+   };
+
+   useEffect(() => {
+      fetchSales();
+      const interval = setInterval(fetchSales, 10000); // Poll every 10s
+      return () => clearInterval(interval);
+   }, []);
+
+   if (sales.length === 0) return null;
+
+   return (
+      <div className="mb-10">
+         <div className="flex items-center gap-3 mb-6 px-1">
+            <div className="w-1.5 h-6 bg-[var(--accent-orange)] rounded-full animate-pulse" />
+            <h2 className="text-[18px] font-black text-white uppercase tracking-tight">⚡ Live Rescues</h2>
+         </div>
+
+         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 px-1 snap-x">
+            {sales.map(sale => (
+               <motion.div
+                  layout
+                  key={sale._id}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="min-w-[280px] bg-stone-900 rounded-2xl border border-[var(--accent-orange)]/30 p-5 shadow-[0_0_20px_rgba(249,115,22,0.1)] relative overflow-hidden snap-center"
+               >
+                  <div className="absolute top-0 right-0 bg-[var(--accent-orange)] text-black text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-widest">
+                     30% OFF
+                  </div>
+
+                  <h4 className="text-[18px] font-black text-white uppercase leading-none mb-1 translate-y-2">{sale.itemName}</h4>
+                  <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-6 translate-y-2">Chef prepared • Ready now</p>
+
+                  <div className="flex items-end justify-between mt-4 border-t border-dashed border-white/10 pt-4">
+                     <div>
+                        <p className="text-[10px] font-black text-white/20 line-through tabular-nums">₹{sale.originalPrice}</p>
+                        <p className="text-[24px] font-black text-[var(--accent-orange)] tabular-nums leading-none">₹{sale.discountedPrice}</p>
+                     </div>
+                     <Button
+                        onClick={() => onRescue(sale._id, sale.discountedPrice)}
+                        variant="white"
+                        className="h-[40px] px-6 rounded-lg text-[10px] uppercase font-black tracking-widest bg-[var(--accent-orange)] text-white hover:bg-orange-600 border-none"
+                     >
+                        Rescue
+                     </Button>
+                  </div>
+               </motion.div>
+            ))}
          </div>
       </div>
    );
@@ -484,7 +549,7 @@ export const RecommendToFriends = ({ userId, menu }: { userId: string, menu: any
       setLoading(true);
       try {
          await api.recommendToFriend({ userId, item: selectedItem, friendName });
-         toast.success('Broadcasted');
+         toast.success('Recommended!');
          setSelectedItem('');
          setFriendName('');
       } catch (e) {
@@ -501,11 +566,11 @@ export const RecommendToFriends = ({ userId, menu }: { userId: string, menu: any
                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
                   <Zap className="text-[var(--accent-orange)]" size={20} />
                </div>
-               <h4 className="text-[14px] font-black text-white uppercase tracking-widest">Signal relay</h4>
+               <h4 className="text-[14px] font-black text-white uppercase tracking-widest">Recommend Food</h4>
             </div>
             <div className="space-y-4">
                <div>
-                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2 block">Target Hub</label>
+                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2 block">Friend's Name</label>
                   <Input
                      placeholder="NAME..."
                      className="bg-black border-white/10 h-[56px] rounded-xl text-white font-black uppercase text-[14px] px-5 shadow-inner"
@@ -514,7 +579,7 @@ export const RecommendToFriends = ({ userId, menu }: { userId: string, menu: any
                   />
                </div>
                <div>
-                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2 block">Unit Reference</label>
+                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-2 block">Food Item</label>
                   <select
                      className="w-full h-[56px] rounded-xl bg-black border border-white/10 px-5 font-black text-[12px] text-white uppercase outline-none shadow-inner"
                      value={selectedItem}
@@ -533,7 +598,7 @@ export const RecommendToFriends = ({ userId, menu }: { userId: string, menu: any
                   isLoading={loading}
                   disabled={!selectedItem || !friendName}
                >
-                  Transmit
+                  Recommend
                </Button>
             </div>
          </div>

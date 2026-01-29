@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Sparkles, Gift, Box, User, Users, Bell, LogOut,
+  Sparkles, Gift, Box, User, Users, Bell, LogOut, Camera,
   Star, ChevronRight, TrendingUp, ShieldCheck, ArrowRight, Zap, Target, X, Wallet, MessageSquare, Radio
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -12,8 +12,10 @@ import {
   CollectionList,
   UserProfile,
   FeedbackForm,
-  RecommendToFriends
+  RecommendToFriends,
+  FlashSaleList
 } from '../components/StudentFeaturesConnected';
+import { SelfieBroadcast, SelfieBroadcastRef } from '../components/SelfieBroadcast';
 
 interface StudentHomeWithFeaturesProps {
   onSelectBranch: (id: string) => void;
@@ -24,6 +26,7 @@ interface StudentHomeWithFeaturesProps {
   orders: any[];
   onReplenish?: (amount: number) => Promise<boolean>;
   onRefreshUser?: () => void;
+  onRescueOrder?: (saleId: string, amount: number) => void;
 }
 
 export const StudentHomeWithFeatures = ({
@@ -34,16 +37,18 @@ export const StudentHomeWithFeatures = ({
   onLogout,
   orders,
   onReplenish,
-  onRefreshUser
+  onRefreshUser,
+  onRescueOrder
 }: StudentHomeWithFeaturesProps) => {
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [showReplenish, setShowReplenish] = useState(false);
   const [isReplenishing, setIsReplenishing] = useState(false);
+  const selfieRef = useRef<SelfieBroadcastRef>(null);
 
   const branches = [
-    { id: 'A', name: 'Burger Junction', subtitle: 'Building A • North Side', icon: '🍔', gradient: 'from-orange-600 to-rose-600', hue: 'orange' },
-    { id: 'B', name: 'Chill & Brew', subtitle: 'Building B • Center Hub', icon: '🥤', gradient: 'from-blue-600 to-indigo-700', hue: 'blue' },
-    { id: 'C', name: 'Quick Bites', subtitle: 'Building C • East Wing', icon: '🍕', gradient: 'from-emerald-600 to-teal-700', hue: 'green' },
+    { id: 'A', name: 'Burger Junction', subtitle: 'Zone A • North Side', icon: '🍔', gradient: 'from-orange-600 to-rose-600', hue: 'orange' },
+    { id: 'B', name: 'Chill & Brew', subtitle: 'Zone B • Main Hub', icon: '🥤', gradient: 'from-blue-600 to-indigo-700', hue: 'blue' },
+    { id: 'C', name: 'Quick Bites', subtitle: 'Zone C • Plaza', icon: '🍕', gradient: 'from-emerald-600 to-teal-700', hue: 'green' },
   ];
 
   const features = [
@@ -92,74 +97,53 @@ export const StudentHomeWithFeatures = ({
             </div>
           </motion.div>
           <div>
-            <h1 className="text-[20px] font-black text-white tracking-tight uppercase leading-none mb-1">Elite Eater</h1>
+            <h1 className="text-[20px] font-black text-white tracking-tight uppercase leading-none mb-1">Valued Guest</h1>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/5 border border-white/10 w-fit">
               <ShieldCheck size={10} className="text-[var(--accent-green)]" />
-              <span className="text-[12px] font-black uppercase tracking-widest text-[var(--accent-green)]">Verified Hub</span>
+              <span className="text-[12px] font-black uppercase tracking-widest text-[var(--accent-green)]">Club Member</span>
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          <motion.button whileTap={{ scale: 0.9 }} className="w-12 h-12 rounded-xl bg-stone-900 border border-white/10 flex items-center justify-center text-white shadow-lg">
-            <Bell size={20} />
-          </motion.button>
+          {/* Bell button removed as per user request */}
         </div>
       </div>
 
       {/* 32sp Display Header */}
       <div className="mb-10">
-        <div className="flex items-center gap-2 mb-2">
-          <Target size={14} className="text-[var(--accent-orange)]" />
-          <span className="text-[12px] font-black text-[var(--accent-orange)] uppercase tracking-widest">Active Objective</span>
-        </div>
-        <h2 className="text-[32px] font-black text-white mb-2 tracking-tight uppercase leading-[1.1]">
-          Sustain <br />
-          <span className="text-[var(--accent-orange)] italic">Innovation.</span>
-        </h2>
-        <p className="text-white/30 text-[14px] font-bold uppercase tracking-widest mt-4">Hub Sector: 7G Mainframe</p>
-      </div>
-
-      {/* 16dp Grid Calibrated Vault */}
-      <div className="bg-stone-900 p-6 rounded-2xl mb-10 relative overflow-hidden border border-white/5 shadow-xl">
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[var(--accent-orange)]/5 rounded-full -mr-[150px] -mt-[150px] blur-[80px]" />
-
-        <div className="flex justify-between items-center relative z-10">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-4 opacity-40">
-              <Zap size={14} className="text-white" />
-              <span className="text-[12px] font-black text-white uppercase tracking-widest">Reserve Capital</span>
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Target size={14} className="text-[var(--accent-orange)]" />
+              <span className="text-[12px] font-black text-[var(--accent-orange)] uppercase tracking-widest">Today's Goal</span>
             </div>
-
-            <div className="flex items-baseline gap-2 mb-6">
-              <span className="text-[20px] font-black text-[var(--accent-orange)]">₹</span>
-              <h3 className="text-[48px] font-black text-white tracking-tighter tabular-nums leading-none">
-                {user?.balance || 0}
-              </h3>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="px-3 py-1.5 bg-[var(--accent-green)]/10 rounded-lg border border-[var(--accent-green)]/20 flex items-center gap-2">
-                <TrendingUp size={12} className="text-[var(--accent-green)]" />
-                <span className="text-[12px] font-black text-[var(--accent-green)] uppercase">+{user?.points || 0} Energy</span>
-              </div>
-            </div>
+            <h2 className="text-[32px] font-black text-white mb-2 tracking-tight uppercase leading-[1.1]">
+              Eat <br />
+              <span className="text-[var(--accent-orange)] italic">Fresh.</span>
+            </h2>
           </div>
-
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowReplenish(true)}
-            className="w-16 h-16 rounded-xl bg-[var(--accent-orange)] shadow-lg shadow-orange-500/20 flex items-center justify-center text-white"
+            onClick={() => selfieRef.current?.openUploadModal()}
+            className="w-14 h-14 rounded-2xl bg-stone-900 border border-white/10 flex items-center justify-center text-white shadow-lg active:scale-95 transition-all group"
           >
-            <ArrowRight size={24} strokeWidth={3} />
+            <Camera size={24} className="group-hover:text-[var(--accent-orange)] transition-colors" />
           </motion.button>
         </div>
+        <p className="text-white/30 text-[14px] font-bold uppercase tracking-widest mt-4">Location: Downtown Branch</p>
       </div>
+
+      {/* Selfie Broadcast Point */}
+      <SelfieBroadcast ref={selfieRef} userId={userId} userName={user?.name || 'Guest'} />
+
+      {/* Flash Sale List */}
+      {onRescueOrder && <FlashSaleList userId={userId} onRescue={onRescueOrder} />}
 
       {/* 18sp Section Header + 16dp Card Spacing */}
       <div className="mb-12">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-1 h-6 bg-[var(--accent-orange)] rounded-full" />
-          <h2 className="text-[18px] font-black text-white uppercase tracking-tight">Canteen Sectors</h2>
+          <h2 className="text-[18px] font-black text-white uppercase tracking-tight">Food Outlets</h2>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
@@ -185,7 +169,7 @@ export const StudentHomeWithFeatures = ({
                     <span className="text-[12px] font-black text-white">4.8</span>
                   </div>
                   <span className="text-[10px] text-white/20">|</span>
-                  <p className="text-[10px] font-black text-[var(--accent-green)] uppercase tracking-widest">Rapid Link ⚡</p>
+                  <p className="text-[10px] font-black text-[var(--accent-green)] uppercase tracking-widest">Fast Delivery ⚡</p>
                 </div>
               </div>
               <ChevronRight size={20} className="text-white/20" />
@@ -196,7 +180,7 @@ export const StudentHomeWithFeatures = ({
 
       {/* 16sp Body / 8-12dp Corner Radius Modules */}
       <div className="mb-8">
-        <h2 className="text-[18px] font-black text-white uppercase tracking-tight mb-6 px-1">System Modules</h2>
+        <h2 className="text-[18px] font-black text-white uppercase tracking-tight mb-6 px-1">Quick Actions</h2>
         <div className="grid grid-cols-3 gap-4">
           {features.map((f) => (
             <button
@@ -242,8 +226,8 @@ export const StudentHomeWithFeatures = ({
             >
               <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h3 className="text-[20px] font-black text-white uppercase">Vault Refill</h3>
-                  <p className="text-[12px] font-bold text-white/30 uppercase tracking-widest">Quantum Transfer</p>
+                  <h3 className="text-[20px] font-black text-white uppercase">Add Money</h3>
+                  <p className="text-[12px] font-bold text-white/30 uppercase tracking-widest">Secure Payment</p>
                 </div>
                 <button onClick={() => setShowReplenish(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white">
                   <X size={20} />
@@ -276,7 +260,7 @@ export const StudentHomeWithFeatures = ({
                 onClick={() => setShowReplenish(false)}
                 className="w-full h-[56px] rounded-xl text-[14px] font-black uppercase bg-white text-black"
               >
-                Abort
+                Go Back
               </Button>
             </motion.div>
           </div>

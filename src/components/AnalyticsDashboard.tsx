@@ -76,10 +76,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
             {/* Header (56dp Material App Bar) */}
             <div className="h-[64px] px-6 border-b border-white/10 flex items-center justify-between shrink-0 bg-stone-900/50 backdrop-blur-xl">
                 <div>
-                    <h2 className="text-[20px] font-black text-white tracking-tight uppercase leading-none">Intelligence Hub</h2>
+                    <h2 className="text-[20px] font-black text-white tracking-tight uppercase leading-none">Sales Dashboard</h2>
                     <div className="flex items-center gap-1.5 mt-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-orange)] animate-pulse" />
-                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Real-Time Pulse</p>
+                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Live Updates</p>
                     </div>
                 </div>
 
@@ -94,7 +94,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
             {/* Tab Navigation (48dp height selectors) */}
             <div className="px-6 py-4 flex gap-2 overflow-x-auto no-scrollbar shrink-0 border-b border-white/5">
                 {[
-                    { id: 'overview', label: 'Pulse', icon: Zap },
+                    { id: 'overview', label: 'Overview', icon: Zap },
                     { id: 'customers', label: 'Users', icon: Users },
                     { id: 'menu', label: 'Menu', icon: Star },
                     { id: 'staff', label: 'Staff', icon: ChefHat },
@@ -122,30 +122,30 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
                         <div className="grid grid-cols-2 gap-4">
                             <StatCard
                                 icon={Zap}
-                                label="Active Tasks"
+                                label="Live Orders"
                                 value={realTimeStats.activeOrders}
-                                subValue="Kitchen Matrix"
+                                subValue="Kitchen Progress"
                                 color="from-orange-500 to-red-600"
                             />
                             <StatCard
                                 icon={TrendingUp}
-                                label="Daily Yield"
+                                label="Today's Income"
                                 value={`₹${realTimeStats.todayRevenue.toLocaleString()}`}
-                                subValue={`${realTimeStats.todayOrders} Signals`}
+                                subValue={`${realTimeStats.todayOrders} Orders`}
                                 color="from-emerald-500 to-teal-600"
                             />
                             <StatCard
                                 icon={Clock}
-                                label="Process Latency"
+                                label="Wait Time"
                                 value="18m"
                                 subValue="Standard Avg"
                                 color="from-blue-500 to-indigo-600"
                             />
                             <StatCard
                                 icon={UserCheck}
-                                label="Retention"
+                                label="Loyalty"
                                 value={`${customerStats?.customerRetentionRate}%`}
-                                subValue="Recursive User"
+                                subValue="Returning Users"
                                 color="from-purple-500 to-pink-600"
                             />
                         </div>
@@ -153,7 +153,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-1 h-6 bg-[var(--accent-orange)] rounded-full" />
-                                <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Top Transmissions</h3>
+                                <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Top Dishes</h3>
                             </div>
                             <div className="bg-stone-900 rounded-xl border border-white/5 overflow-hidden">
                                 {popularItems.map((item, idx) => (
@@ -176,7 +176,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
                         <div className="bg-stone-900 p-6 rounded-xl border border-white/5">
                             <div className="flex items-center gap-3 mb-6">
                                 <Activity size={18} className="text-[var(--accent-orange)]" />
-                                <h3 className="text-[18px] font-black text-white uppercase tracking-tight">System Core</h3>
+                                <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Kitchen Status</h3>
                             </div>
                             {employeeStats && (
                                 <div className="space-y-8">
@@ -184,20 +184,20 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
                                         <div className="text-[48px] font-black text-white tracking-tighter leading-none mb-2">
                                             {employeeStats.efficiency}%
                                         </div>
-                                        <div className="text-[12px] font-black text-white/20 uppercase tracking-widest">Global Capacity</div>
+                                        <div className="text-[12px] font-black text-white/20 uppercase tracking-widest">Efficiency Score</div>
                                     </div>
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="p-4 bg-white/5 border border-white/5 rounded-xl text-center">
                                             <div className="text-[18px] font-black text-[var(--accent-green)]">{employeeStats.statusBreakdown.completed}</div>
-                                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Sync</div>
+                                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Done</div>
                                         </div>
                                         <div className="p-4 bg-white/5 border border-white/5 rounded-xl text-center">
                                             <div className="text-[18px] font-black text-[var(--accent-orange)]">{employeeStats.statusBreakdown.preparing}</div>
-                                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Flow</div>
+                                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Cooking</div>
                                         </div>
                                         <div className="p-4 bg-white/5 border border-white/5 rounded-xl text-center">
                                             <div className="text-[18px] font-black text-red-500">{employeeStats.statusBreakdown.cancelled}</div>
-                                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Fault</div>
+                                            <div className="text-[10px] font-black text-white/20 uppercase mt-1">Cancelled</div>
                                         </div>
                                     </div>
                                 </div>
@@ -211,9 +211,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
                     <div className="space-y-8">
                         <div className="grid grid-cols-1 gap-4">
                             {[
-                                { label: 'Total Matrix Users', val: customerStats.totalCustomers, icon: Users, color: 'text-indigo-500' },
-                                { label: 'Recursive Nodes', val: customerStats.repeatCustomers, icon: Target, color: 'text-[var(--accent-orange)]' },
-                                { label: 'Avg Frequency', val: customerStats.averageOrdersPerCustomer, icon: Activity, color: 'text-[var(--accent-green)]' }
+                                { label: 'Total Customers', val: customerStats.totalCustomers, icon: Users, color: 'text-indigo-500' },
+                                { label: 'Regulars', val: customerStats.repeatCustomers, icon: Target, color: 'text-[var(--accent-orange)]' },
+                                { label: 'Average Visits', val: customerStats.averageOrdersPerCustomer, icon: Activity, color: 'text-[var(--accent-green)]' }
                             ].map((s, idx) => (
                                 <div key={idx} className="bg-stone-900 p-6 rounded-xl border border-white/5 flex items-center justify-between shadow-lg">
                                     <div className="flex items-center gap-4">
@@ -229,10 +229,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
                             ))}
                         </div>
 
+                        {/* Explanation helper */}
+                        <p className="text-[10px] text-white/30 font-bold px-1 uppercase tracking-widest">
+                            * Average Visits: How many times a regular customer usually orders from us.
+                        </p>
+
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-1 h-6 bg-[var(--accent-orange)] rounded-full" />
-                                <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Priority Nodes</h3>
+                                <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Top Buyers</h3>
                             </div>
                             <div className="bg-stone-900 rounded-xl border border-white/5 overflow-hidden">
                                 <div className="overflow-x-auto no-scrollbar">
@@ -240,9 +245,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
                                         <thead>
                                             <tr className="border-b border-white/5 bg-black/50">
                                                 <th className="p-4 text-[10px] font-black text-white/20 uppercase tracking-widest">ID</th>
-                                                <th className="p-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Vol</th>
-                                                <th className="p-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Yield</th>
-                                                <th className="p-4 text-[10px] font-black text-white/20 uppercase tracking-widest text-right">Avg</th>
+                                                <th className="p-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Orders</th>
+                                                <th className="p-4 text-[10px] font-black text-white/20 uppercase tracking-widest">Spent</th>
+                                                <th className="p-4 text-[10px] font-black text-white/20 uppercase tracking-widest text-right">Avg spent</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">

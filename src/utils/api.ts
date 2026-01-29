@@ -6,6 +6,7 @@ const BASE_URL = isDev ? 'http://localhost:3001/api' : '/api';
 
 const headers = {
   'Content-Type': 'application/json',
+
 };
 
 export const api = {
@@ -77,6 +78,12 @@ export const api = {
   getOrders: async (): Promise<Order[]> => {
     const res = await fetch(`${BASE_URL}/orders`, { headers });
     if (!res.ok) throw new Error('Failed to fetch orders');
+    return res.json();
+  },
+
+  getFlashSales: async (): Promise<any[]> => {
+    const res = await fetch(`${BASE_URL}/orders/flash-sales`, { headers });
+    if (!res.ok) throw new Error('Failed to fetch flash sales');
     return res.json();
   },
 
@@ -238,6 +245,48 @@ export const api = {
   getTrends: async (period: 'day' | 'week' | 'month' = 'week'): Promise<any> => {
     const res = await fetch(`${BASE_URL}/analytics/trends?period=${period}`, { headers });
     if (!res.ok) throw new Error('Failed to fetch trends');
+    return res.json();
+  },
+
+  // --- Selfies ---
+  getBestSelfie: async (): Promise<any> => {
+    const res = await fetch(`${BASE_URL}/selfies/best`, { headers });
+    if (!res.ok) throw new Error('Failed to fetch best selfie');
+    return res.json();
+  },
+
+  submitSelfie: async (selfie: any): Promise<any> => {
+    const res = await fetch(`${BASE_URL}/selfies`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(selfie),
+    });
+    if (!res.ok) throw new Error('Failed to submit selfie');
+    return res.json();
+  },
+
+  getPendingSelfies: async (): Promise<any[]> => {
+    const res = await fetch(`${BASE_URL}/selfies/pending`, { headers });
+    if (!res.ok) throw new Error('Failed to fetch pending selfies');
+    return res.json();
+  },
+
+  updateSelfieStatus: async (id: string, updates: { status: string; isBest?: boolean }): Promise<any> => {
+    const res = await fetch(`${BASE_URL}/selfies/${id}/status`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error('Failed to update selfie status');
+    return res.json();
+  },
+
+  deleteSelfie: async (id: string): Promise<any> => {
+    const res = await fetch(`${BASE_URL}/selfies/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!res.ok) throw new Error('Failed to delete selfie');
     return res.json();
   }
 };

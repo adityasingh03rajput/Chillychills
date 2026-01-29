@@ -42,7 +42,8 @@ const NEW_USERS = [
 
 async function factoryReset() {
     try {
-        const uri = process.env.MONGODB_URI || 'mongodb+srv://tellonted03angle_db_user:sfaVnPPpSAX0Qsc2@chillychills.nxmkdo8.mongodb.net/?appName=ChillyChills';
+        const uri = process.env.MONGODB_URI;
+        if (!uri) throw new Error('MONGODB_URI not found in environment');
 
         console.log('🔌 Connecting to DB for Factory Reset...');
         await mongoose.connect(uri);

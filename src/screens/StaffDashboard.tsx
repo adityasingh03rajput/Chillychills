@@ -18,17 +18,21 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
   const [rejectReason, setRejectReason] = useState('');
 
   const activeOrders = orders
-    .filter(o => !['completed', 'cancelled', 'picked_up', 'rejected'].includes(o.status))
+    .filter(o => !['completed', 'cancelled', 'picked_up', 'rejected', 'rescued'].includes(o.status))
     .sort((a, b) => a.createdAt - b.createdAt);
 
   const filteredOrders = activeOrders
     .filter(o => branchFilter === 'All' || o.branch === branchFilter)
-    .filter(o => filter === 'all' ? true : o.status === filter);
+    .filter(o => {
+      if (filter === 'all') return true;
+      if (filter === 'preparing') return o.status === 'preparing' || o.status === 'awaiting_rescue';
+      return o.status === filter;
+    });
 
   const counts = {
     all: activeOrders.length,
     placed: activeOrders.filter(o => o.status === 'placed').length,
-    preparing: activeOrders.filter(o => o.status === 'preparing').length,
+    preparing: activeOrders.filter(o => o.status === 'preparing' || o.status === 'awaiting_rescue').length,
     ready: activeOrders.filter(o => o.status === 'ready').length,
   };
 
@@ -129,8 +133,12 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
                 <div className="flex justify-between items-start mb-6 relative z-10 border-b border-dashed border-white/5 pb-4">
                   <div className="flex items-center gap-3">
                     <h3 className="text-[28px] font-black text-white tracking-tighter uppercase leading-none">#{order.token}</h3>
-                    <div className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${order.status === 'placed' ? 'bg-[var(--accent-orange)]/10 text-[var(--accent-orange)] border-[var(--accent-orange)]/20' : order.status === 'preparing' ? 'bg-blue-600/10 text-blue-500 border-blue-500/20' : 'bg-[var(--accent-green)]/10 text-[var(--accent-green)] border-[var(--accent-green)]/20'}`}>
-                      {order.status}
+                    <div className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${order.status === 'placed' ? 'bg-[var(--accent-orange)]/10 text-[var(--accent-orange)] border-[var(--accent-orange)]/20' :
+                      order.status === 'preparing' ? 'bg-blue-600/10 text-blue-500 border-blue-500/20' :
+                        order.status === 'awaiting_rescue' ? 'bg-purple-600/20 text-purple-400 border-purple-500/30' :
+                          'bg-[var(--accent-green)]/10 text-[var(--accent-green)] border-[var(--accent-green)]/20'
+                      }`}>
+                      {order.status === 'awaiting_rescue' ? 'RESALE LISTED' : order.status}
                     </div>
                   </div>
                   <div className="text-right">
@@ -147,6 +155,7 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
                         <div className="min-w-0">
                           <p className="text-[16px] font-black text-white uppercase tracking-tight truncate">{item.name}</p>
                           {item.notes && <p className="text-[12px] text-white/30 italic truncate leading-none mt-1">"{item.notes}"</p>}
+                          {order.flashSaleId && <p className="text-purple-400 text-[9px] font-black uppercase tracking-tighter mt-1 flex items-center gap-1"><Flame size={10} /> Rescue Deal</p>}
                         </div>
                       </div>
                     </div>
@@ -186,7 +195,7 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
                           </button>
                         </>
                       )}
-                      {order.status === 'preparing' && (
+                      {(order.status === 'preparing' || order.status === 'awaiting_rescue') && (
                         <button
                           onClick={() => handleStatusUpdate(order.id, 'ready')}
                           className="w-full h-[56px] bg-blue-600 text-white rounded-xl text-[14px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 active:scale-95 transition-all"

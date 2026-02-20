@@ -5,6 +5,7 @@ import {
   Star, ChevronRight, TrendingUp, ShieldCheck, ArrowRight, Zap, Target, X, Wallet, MessageSquare, Radio
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { toast } from 'sonner';
 import {
   FeatureModal,
   RecommendedList,
@@ -15,7 +16,9 @@ import {
   RecommendToFriends,
   FlashSaleList
 } from '../components/StudentFeaturesConnected';
+import { api } from '../utils/api';
 import { SelfieBroadcast, SelfieBroadcastRef } from '../components/SelfieBroadcast';
+import { UpiTopUpModal } from '../components/UpiTopUpModal';
 
 interface StudentHomeWithFeaturesProps {
   onSelectBranch: (id: string) => void;
@@ -43,7 +46,22 @@ export const StudentHomeWithFeatures = ({
   const [activeFeature, setActiveFeature] = useState<string | null>(null);
   const [showReplenish, setShowReplenish] = useState(false);
   const [isReplenishing, setIsReplenishing] = useState(false);
+  const [announcement, setAnnouncement] = useState<string | null>(null);
   const selfieRef = useRef<SelfieBroadcastRef>(null);
+
+  React.useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const data = await api.getAnnouncements();
+        // Check for specific branch announcement first, then fallback to 'all'
+        const msg = data['all'] || data['medical'] || null; // Simplified logic for demo
+        setAnnouncement(msg);
+      } catch (e) {
+        console.error('Failed to fetch announcements');
+      }
+    };
+    fetchAnnouncements();
+  }, []);
 
   const branches = [
     { id: 'A', name: 'Burger Junction', subtitle: 'Zone A • North Side', icon: '🍔', gradient: 'from-orange-600 to-rose-600', hue: 'orange' },
@@ -136,6 +154,58 @@ export const StudentHomeWithFeatures = ({
       {/* Selfie Broadcast Point */}
       <SelfieBroadcast ref={selfieRef} userId={userId} userName={user?.name || 'Guest'} />
 
+      {/* Live Admin Announcement */}
+      <AnimatePresence>
+        {announcement && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-6"
+          >
+            <div className="bg-[var(--accent-orange)]/10 border border-[var(--accent-orange)]/20 p-4 rounded-2xl flex items-center gap-3 overflow-hidden">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--accent-orange)] flex items-center justify-center text-black">
+                <Bell size={16} />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-white text-[14px] font-bold leading-tight marquee-container">
+                  {announcement}
+                </p>
+              </div>
+              <button onClick={() => setAnnouncement(null)} className="text-white/40 hover:text-white transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Wallet Status Card */}
+      <div className="mb-8">
+        <motion.div
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setShowReplenish(true)}
+          className="bg-gradient-to-br from-stone-900 to-stone-950 p-6 rounded-[32px] border border-white/10 shadow-2xl relative overflow-hidden group"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Wallet size={120} strokeWidth={1} />
+          </div>
+          <div className="relative z-10 flex justify-between items-end">
+            <div>
+              <p className="text-white/30 text-[12px] font-black uppercase tracking-[0.2em] mb-2">Vault Balance</p>
+              <h3 className="text-4xl font-black text-white tracking-tighter">₹{user?.balance || 0}</h3>
+              <div className="flex items-center gap-2 mt-4 px-3 py-1 bg-[var(--accent-green)]/10 border border-[var(--accent-green)]/20 rounded-full w-fit">
+                <ShieldCheck size={12} className="text-[var(--accent-green)]" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-[var(--accent-green)]">Secured by UPI Relay</span>
+              </div>
+            </div>
+            <Button size="sm" className="bg-white text-black font-black uppercase text-[10px] tracking-widest px-6 h-10 rounded-xl">
+              Add Money
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+
       {/* Flash Sale List */}
       {onRescueOrder && <FlashSaleList userId={userId} onRescue={onRescueOrder} />}
 
@@ -208,64 +278,15 @@ export const StudentHomeWithFeatures = ({
       </FeatureModal>
 
       {/* 56dp Height Styled Input Modal */}
-      <AnimatePresence>
-        {showReplenish && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-20">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowReplenish(false)}
-              className="absolute inset-0 bg-black/90 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              className="w-full max-w-[440px] bg-stone-900 rounded-t-[24px] border-t border-white/10 p-6 relative z-10"
-            >
-              <div className="flex justify-between items-center mb-8">
-                <div>
-                  <h3 className="text-[20px] font-black text-white uppercase">Add Money</h3>
-                  <p className="text-[12px] font-bold text-white/30 uppercase tracking-widest">Secure Payment</p>
-                </div>
-                <button onClick={() => setShowReplenish(false)} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white">
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {replenishAmounts.map(amt => (
-                  <button
-                    key={amt}
-                    disabled={isReplenishing}
-                    onClick={() => handleReplenishClick(amt)}
-                    className="h-[56px] rounded-xl bg-stone-800 border border-white/5 active:scale-95 transition-all flex items-center justify-center gap-2 group"
-                  >
-                    <span className="text-[16px] font-black text-white group-hover:text-[var(--accent-orange)]">₹{amt}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="bg-stone-800/50 p-4 rounded-xl border border-white/5 flex items-center gap-4 mb-6">
-                <Wallet size={20} className="text-[var(--accent-green)]" />
-                <div>
-                  <p className="text-[12px] font-black text-white/30 uppercase">Vault Balance</p>
-                  <p className="text-[18px] font-black text-white">₹{user?.balance || 0}</p>
-                </div>
-              </div>
-
-              <Button
-                disabled={isReplenishing}
-                onClick={() => setShowReplenish(false)}
-                className="w-full h-[56px] rounded-xl text-[14px] font-black uppercase bg-white text-black"
-              >
-                Go Back
-              </Button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <UpiTopUpModal
+        isOpen={showReplenish}
+        onClose={() => setShowReplenish(false)}
+        userId={userId}
+        onSuccess={() => {
+          onRefreshUser?.();
+          toast.success('Funds synchronized with network');
+        }}
+      />
 
     </div>
   );

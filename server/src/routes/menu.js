@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import MenuItem from '../models/MenuItem.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -30,8 +31,8 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST /api/menu/seed - Seed menu with initial data
-router.post('/seed', async (req, res) => {
+// POST /api/menu/seed - Seed menu with initial data (Manager only)
+router.post('/seed', authenticate, authorize('manager'), async (req, res) => {
     try {
         const { items } = req.body;
 
@@ -48,8 +49,8 @@ router.post('/seed', async (req, res) => {
     }
 });
 
-// POST /api/menu - Add new menu item
-router.post('/', async (req, res) => {
+// POST /api/menu - Add new menu item (Manager only)
+router.post('/', authenticate, authorize('manager'), async (req, res) => {
     try {
         const itemData = req.body;
 
@@ -81,8 +82,8 @@ router.post('/', async (req, res) => {
     }
 });
 
-// PUT /api/menu/:id - Update menu item
-router.put('/:id', async (req, res) => {
+// PUT /api/menu/:id - Update menu item (Manager only)
+router.put('/:id', authenticate, authorize('manager'), async (req, res) => {
     try {
         const id = req.params.id;
         const query = {

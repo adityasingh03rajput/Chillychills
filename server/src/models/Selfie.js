@@ -35,6 +35,23 @@ const selfieSchema = new mongoose.Schema({
     approvedAt: {
         type: Date
     }
+}, {
+    timestamps: false, // already has createdAt
+    versionKey: false,
+    toJSON: {
+        transform: function (doc, ret) {
+            ret.id = ret._id;
+            delete ret._id;
+            return ret;
+        }
+    },
+    toObject: {
+        transform: function (doc, ret) {
+            ret.id = ret._id;
+            delete ret._id;
+            return ret;
+        }
+    }
 });
 
 // Index to quickly find the best selfie for a specific day

@@ -54,6 +54,7 @@ export interface Order {
   refundRequest?: RefundRequest;
   rejectionReason?: string;
   flashSaleId?: string;
+  idempotencyKey?: string;
 }
 
 export interface User {

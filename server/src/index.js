@@ -21,6 +21,13 @@ import giftcardsRouter from './routes/giftcards.js';
 import socialRouter from './routes/social.js';
 import authRouter from './routes/auth.js';
 import selfiesRouter from './routes/selfies.js';
+import paymentRouter from './routes/payment.js';
+import adminRouter from './routes/admin.js';
+import adminEnhancedRouter from './routes/adminEnhanced.js';
+import auditLogsRouter from './routes/auditLogs.js';
+
+// Import middleware
+import { apiLimiter, authLimiter } from './middleware/rateLimiter.js';
 
 // Load environment variables
 dotenv.config();
@@ -31,19 +38,41 @@ const httpServer = createServer(app);
 // Socket.io setup dengan CORS
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+        origin: "*", // Allow all for development
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         credentials: true
     }
 });
 
 // Middleware
+const allowedOrigins = [
+    process.env.CORS_ORIGIN || 'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:4173'
+];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            return callback(null, true); // Allow all in dev for now to fix connection
+        }
+        return callback(null, true);
+    },
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url} - Origin: ${req.get('origin')}`);
+    next();
+});
+
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
 
 // Make io accessible in routes
 app.set('io', io);
@@ -73,6 +102,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authLimiter, authRouter); // Apply strict rate limiting to auth
 app.use('/api/orders', ordersRouter);
 app.use('/api/menu', menuRouter);
 app.use('/api/feedback', feedbackRouter);
@@ -81,16 +111,29 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/giftcards', giftcardsRouter);
 app.use('/api/social', socialRouter);
-app.use('/api/auth', authRouter);
 app.use('/api/selfies', selfiesRouter);
+app.use('/api/payment', paymentRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/admin-enhanced', adminEnhancedRouter); // New enhanced admin routes
+app.use('/api/audit-logs', auditLogsRouter); // Audit logging routes
 
-// Serve static files from the React app
+// Serve Admin Panel
+app.use('/admin', express.static(path.join(__dirname, '../../admin-panel')));
+
+// Serve static files from the Main App (Build)
 app.use(express.static(path.join(__dirname, '../../build')));
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
+// The "catchall" handler
 app.get('*', (req, res, next) => {
+    // If it's an API call that wasn't caught, let it fall through to 404
     if (req.path.startsWith('/api')) return next();
+
+    // If it's an admin path, send admin index
+    if (req.path.startsWith('/admin')) {
+        return res.sendFile(path.join(__dirname, '../../admin-panel/index.html'));
+    }
+
+    // Otherwise send main app index
     res.sendFile(path.join(__dirname, '../../build/index.html'));
 });
 

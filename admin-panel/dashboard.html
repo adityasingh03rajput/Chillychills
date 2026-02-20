@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChillyChills - Omni Dashboard</title>
+    <link rel="stylesheet" href="dashboard-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="dashboard-body">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-group">
+                <svg viewBox="0 0 100 100" class="sidebar-logo">
+                    <circle cx="50" cy="50" r="45" fill="#667eea" opacity="0.2" />
+                    <path
+                        d="M50 20C33.43 20 20 33.43 20 50C20 66.57 33.43 80 50 80C66.57 80 80 66.57 80 50C80 33.43 66.57 20 50 20Z"
+                        fill="#667eea" />
+                </svg>
+                <span class="logo-text">ChillyOmni</span>
+            </div>
+        </div>
+
+        <div class="nav-links">
+            <div class="nav-section-label"
+                style="font-size: 10px; color: var(--text-muted); padding: 20px 24px 8px; font-weight: 800; letter-spacing: 1px;">
+                MANAGEMENT HUB</div>
+            <button class="nav-item active" data-view="overview">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Overview</span>
+            </button>
+            <button class="nav-item" data-view="finance">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <span>Finance & UTR</span>
+            </button>
+            <button class="nav-item" data-view="users">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                </svg>
+                <span>User Database</span>
+            </button>
+
+            <div class="nav-section-label"
+                style="font-size: 10px; color: var(--text-muted); padding: 20px 24px 8px; font-weight: 800; letter-spacing: 1px;">
+                KITCHEN OPS (CHEF)</div>
+            <button class="nav-item" data-view="kitchen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path
+                        d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+                    </path>
+                </svg>
+                <span>Prep Station</span>
+            </button>
+            <button class="nav-item" data-view="menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>Menu Control</span>
+            </button>
+
+            <div class="nav-section-label"
+                style="font-size: 10px; color: var(--text-muted); padding: 20px 24px 8px; font-weight: 800; letter-spacing: 1px;">
+                STUDENT PORTAL</div>
+            <button class="nav-item" data-view="student-order">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-8 2a2 2 0 1 1-4 0 2 2 0 0 1 4 0z">
+                    </path>
+                </svg>
+                <span>Order Food</span>
+            </button>
+            <button class="nav-item" data-view="social">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                <span>Campus Social</span>
+            </button>
+
+            <div class="nav-section-label"
+                style="font-size: 10px; color: var(--text-muted); padding: 20px 24px 8px; font-weight: 800; letter-spacing: 1px;">
+                SYSTEM</div>
+            <button class="nav-item" data-view="staff">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="7" r="4"></circle>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                </svg>
+                <span>Recruitment</span>
+            </button>
+            <button class="nav-item" data-view="comms">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Live Alerts</span>
+            </button>
+            <button class="nav-item" data-view="feedback">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path
+                        d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                    </path>
+                </svg>
+                <span>Reviews</span>
+            </button>
+            <button class="nav-item" data-view="analytics">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                <span>Insights</span>
+            </button>
+            <button class="nav-item" data-view="giftcards">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="20 12 20 22 4 22 4 12"></polyline>
+                    <rect x="2" y="7" width="20" height="5"></rect>
+                    <line x1="12" y1="22" x2="12" y2="7"></line>
+                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+                </svg>
+                <span>Gift Cards</span>
+            </button>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" id="logoutBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Logout</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Header -->
+        <header class="topbar">
+            <div class="search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" placeholder="Omni-Search Across Role Personas...">
+            </div>
+
+            <div class="topbar-actions">
+                <div class="omni-wallet glass"
+                    style="padding: 8px 16px; border-radius: 12px; font-weight: 700; color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">👛</span>
+                    <span>Admin Wallet:</span>
+                    <span id="adminWalletBalance">₹0</span>
+                </div>
+                <div class="branch-selector">
+                    <span class="dot medical"></span>
+                    <select id="activeBranch">
+                        <option value="all">Everywhere</option>
+                        <option value="medical">Medical College</option>
+                        <option value="engineering">Engineering College</option>
+                        <option value="hospital">Hospital Canteen</option>
+                    </select>
+                </div>
+
+                <div class="notifications" style="opacity: 0.5; cursor: not-allowed;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                </div>
+
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">M</div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">Manager Name</span>
+                        <span class="user-role" id="userRoleBadge">Super Admin</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- View Containers -->
+
+        <!-- Kitchen (Chef) View -->
+        <div id="kitchen-view" class="view">
+            <div class="view-header">
+                <h1>Kitchen Prep Station</h1>
+                <p>Live order queue for current branch chefs</p>
+            </div>
+            <div class="kitchen-order-grid" id="kitchenOrderGrid">
+                <div class="empty-state">No orders in queue</div>
+            </div>
+        </div>
+
+        <!-- Student Ordering View -->
+        <div id="student-order-view" class="view">
+            <div class="view-header">
+                <h1>Student Portal</h1>
+                <p>Browse menu and place orders as a student</p>
+            </div>
+            <div class="student-ordering-container">
+                <div class="student-menu-grid" id="studentMenuGrid"></div>
+                <div class="student-cart glass">
+                    <h3>My Tray</h3>
+                    <div id="studentCartItems"></div>
+                    <div class="cart-total">Total: ₹<span id="cartTotal">0</span></div>
+                    <button class="btn-primary" onclick="placeStudentOrder()"
+                        style="width: 100%; margin-top: 12px;">Checkout</button>
+                    <small style="color: var(--text-muted); display: block; margin-top: 8px;">Using Admin Wallet</small>
+                </div>
+            </div>
+        </div>
+
+        <div id="overview-view" class="view active">
+            <div class="view-header">
+                <h1>Dashboard Overview</h1>
+                <p>Real-time insights for all 26,000 campus users</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="label">Total Revenue</span>
+                        <h2 class="value">₹1,24,80,000</h2>
+                        <span class="trend up">+12.5% from last month</span>
+                    </div>
+                    <div class="stat-icon rev">₹</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="label">Active Orders</span>
+                        <h2 class="value">142</h2>
+                        <span class="trend up">Peak Hour (Lunch)</span>
+                    </div>
+                    <div class="stat-icon orders">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="label">User Satisfaction</span>
+                        <h2 class="value">4.8/5</h2>
+                        <span class="trend up">98% Positive Feedback</span>
+                    </div>
+                    <div class="stat-icon rating">★</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="label">Refund Requests</span>
+                        <h2 class="value">5</h2>
+                        <span class="trend neutral">Requires Attention</span>
+                    </div>
+                    <div class="stat-icon refund">!</div>
+                </div>
+            </div>
+
+            <!-- Charts & Tables -->
+            <div class="dashboard-grid">
+                <div class="chart-card">
+                    <div class="card-header">
+                        <h3>Branch Revenue Split</h3>
+                        <button class="btn-icon">...</button>
+                    </div>
+                    <div class="chart-placeholder">
+                        <div class="bar-chart">
+                            <div class="bar medical" style="height: 80%" data-label="Medical (10k)"></div>
+                            <div class="bar engineering" style="height: 60%" data-label="Engineering (6k)"></div>
+                            <div class="bar hospital" style="height: 85%" data-label="Hospital (10k)"></div>
+                        </div>
+                    </div>
+                    <div class="chart-labels">
+                        <div class="label-item"><span class="dot medical"></span> Medical</div>
+                        <div class="label-item"><span class="dot engineering"></span> Engineering</div>
+                        <div class="label-item"><span class="dot hospital"></span> Hospital</div>
+                    </div>
+                </div>
+
+                <div class="activity-card">
+                    <div class="card-header">
+                        <h3>Live Order Stream</h3>
+                        <span class="live-indicator">LIVE</span>
+                    </div>
+                    <div class="order-list">
+                        <div class="order-item">
+                            <div class="order-id">#ORD-2841</div>
+                            <div class="order-desc">2x Paneer Tikka + Coke</div>
+                            <div class="order-branch">Medical</div>
+                            <div class="order-status preparing">Preparing</div>
+                        </div>
+                    </div>
+                    <button class="btn-text" onclick="navigateToOrders()">View all orders</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Finance View -->
+        <div id="finance-view" class="view">
+            <div class="view-header">
+                <h1>Financial Control Center</h1>
+                <p>Verify manual UTR transactions and manage campus wallets</p>
+            </div>
+            <div class="finance-grid">
+                <div class="utr-verification-card glass">
+                    <h3>Pending UTR Verifications</h3>
+                    <div class="utr-list" id="utrList">
+                        <div class="empty-state">No pending verifications</div>
+                    </div>
+                </div>
+                <div class="wallet-actions-card glass">
+                    <h3>Manual Wallet Top-up</h3>
+                    <form id="walletTopupForm">
+                        <input type="text" id="topupUserId" placeholder="Student ID (e.g. 23cs01)" required>
+                        <input type="number" id="topupAmount" placeholder="Amount (₹)" required>
+                        <button type="submit" class="btn-primary">Add Funds</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Communications (Announcements) -->
+        <div id="comms-view" class="view">
+            <div class="view-header">
+                <h1>Live Campus Alerts</h1>
+                <button class="btn-primary" id="openCommsBtn">+ New Broadcast</button>
+            </div>
+            <div id="announcementsList" class="announcements-grid" style="margin-top: 24px;">
+                <div class="empty-state">Loading broadcasts...</div>
+            </div>
+        </div>
+
+        <!-- Social Hub (Selfies) -->
+        <div id="social-view" class="view">
+            <div class="view-header">
+                <h1>Campus Social Hub</h1>
+                <p>Moderate student selfies and manage broadcast highlights</p>
+            </div>
+            <div class="selfie-grid" id="selfieModerationGrid">
+                <div class="empty-state">No pending selfies for moderation</div>
+            </div>
+        </div>
+
+        <!-- Users View -->
+        <div id="users-view" class="view">
+            <div class="view-header">
+                <h1>Student Database</h1>
+                <p>Manage all 26,000+ campus identities</p>
+            </div>
+            <div class="user-table-container glass">
+                <table class="staff-table" id="userTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Balance</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Menu View -->
+        <div id="menu-view" class="view">
+            <div class="view-header">
+                <h1>Menu Management</h1>
+                <button class="btn-primary" id="openMenuCreatorBtn">+ Add Item</button>
+            </div>
+            <div class="menu-grid" style="margin-top: 24px;"></div>
+        </div>
+
+        <!-- Feedback View -->
+        <div id="feedback-view" class="view">
+            <div class="view-header">
+                <h1>Student Reviews</h1>
+                <p>Monitor quality and service feedback</p>
+            </div>
+            <div class="feedback-list" id="feedbackList">
+                <div class="empty-state">No reviews yet</div>
+            </div>
+        </div>
+
+        <!-- Staff View -->
+        <div id="staff-view" class="view">
+            <div class="view-header">
+                <h1>Staff Recruitment</h1>
+                <button class="btn-primary" id="openRecruitBtn">+ Recruit Staff</button>
+            </div>
+            <div class="staff-table-container glass" style="margin-top: 24px;">
+                <table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ID</th>
+                            <th>Role</th>
+                            <th>Branch</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Orders View -->
+        <div id="orders-view" class="view">
+            <div class="view-header">
+                <h1>All Orders</h1>
+                <p>Complete order history and management</p>
+            </div>
+            <div class="orders-container glass" style="margin-top: 24px; padding: 24px;">
+                <div id="allOrdersList" class="order-list">
+                    <div class="empty-state">Loading orders...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics View -->
+        <div id="analytics-view" class="view">
+            <div class="view-header">
+                <h1>Advanced Insights</h1>
+                <p>Deep dive into campus behavioral data</p>
+            </div>
+            <div class="analytics-grid" style="margin-top: 24px;">
+                <div class="glass" style="padding: 24px; margin-bottom: 20px;">
+                    <h3>Popular Items</h3>
+                    <div id="popularItemsChart" class="empty-state">Loading analytics...</div>
+                </div>
+                <div class="glass" style="padding: 24px; margin-bottom: 20px;">
+                    <h3>Customer Behavior</h3>
+                    <div id="customerBehaviorChart" class="empty-state">Loading analytics...</div>
+                </div>
+                <div class="glass" style="padding: 24px;">
+                    <h3>Revenue Trends</h3>
+                    <div id="revenueTrendsChart" class="empty-state">Loading analytics...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gift Cards View -->
+        <div id="giftcards-view" class="view">
+            <div class="view-header">
+                <h1>Gift Card Registry</h1>
+                <p>Monitor all gift card transactions and redemptions</p>
+            </div>
+            <div class="giftcard-registry" id="giftCardRegistry" style="margin-top: 24px;">
+                <div class="empty-state">Loading gift card registry...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Staff Recruit Modal -->
+    <div id="recruitModal" class="modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Recruit New Staff</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="recruitForm">
+                <div class="form-group">
+                    <label>Identity ID</label>
+                    <input type="text" id="staffId" required placeholder="e.g. cook_david">
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="staffName" required placeholder="Enter full name">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="staffPass" required placeholder="Temporary password">
+                </div>
+                <div class="form-group">
+                    <label>Staff Role</label>
+                    <select id="staffRole">
+                        <option value="cook">Cook / Chef</option>
+                        <option value="manager">Manager / Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assigned Branch</label>
+                    <select id="staffBranch">
+                        <option value="medical">Medical College</option>
+                        <option value="engineering">Engineering College</option>
+                        <option value="hospital">Hospital Canteen</option>
+                        <option value="ALL">All Branches</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary w-100">Confirm Recruitment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Menu Item Creator Modal -->
+    <div id="menuModal" class="modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Create Menu Item</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="menuForm">
+                <div class="form-group">
+                    <label>Internal ID</label>
+                    <input type="text" id="menuId" required placeholder="e.g. burger_01">
+                </div>
+                <div class="form-group">
+                    <label>Item Name</label>
+                    <input type="text" id="menuName" required placeholder="e.g. Royal Cheese Burger">
+                </div>
+                <div class="form-group">
+                    <label>Price (₹)</label>
+                    <input type="number" id="menuPrice" required placeholder="120">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="menuCategory">
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch / Meal</option>
+                        <option value="snacks">Quick Bites</option>
+                        <option value="drinks">Beverages</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary w-100">Publish to Menu</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div id="announcementModal" class="modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Broadcast Announcement</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="announcementForm">
+                <div class="form-group">
+                    <label>Target Branch</label>
+                    <select id="msgBranch">
+                        <option value="all">Everywhere</option>
+                        <option value="medical">Medical College</option>
+                        <option value="engineering">Engineering College</option>
+                        <option value="hospital">Hospital Canteen</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Message Content</label>
+                    <textarea id="msgContent" required placeholder="Type your live alert here..."
+                        style="width: 100%; height: 100px; padding: 10px; border-radius: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white;"></textarea>
+                </div>
+                <button type="submit" class="btn-primary w-100">Send Live Alert</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

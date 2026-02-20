@@ -42,11 +42,27 @@ router.get('/:id', async (req, res) => {
 router.post('/:id/balance', async (req, res) => {
     try {
         const { amount } = req.body;
+
+        // Validate amount
+        if (typeof amount !== 'number' || isNaN(amount)) {
+            return res.status(400).json({ error: 'Invalid amount. Must be a number.' });
+        }
+
+        if (amount < 0) {
+            return res.status(400).json({ error: 'Cannot add negative amount. Use deduction endpoint instead.' });
+        }
+
+        if (amount > 100000) {
+            return res.status(400).json({ error: 'Maximum replenishment is ₹100,000.' });
+        }
+
         const user = await User.findOneAndUpdate(
             { id: req.params.id },
             { $inc: { balance: amount } },
             { new: true, upsert: true }
         );
+
+        console.log(`💰 Balance updated for user ${req.params.id}: +₹${amount}. New balance: ₹${user.balance}`);
         res.json(user);
     } catch (error) {
         console.error('POST /users/:id/balance error:', error);

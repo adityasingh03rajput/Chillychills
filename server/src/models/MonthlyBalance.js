@@ -154,6 +154,15 @@ monthlyBalanceSchema.statics.updateAfterOrder = async function (order, action = 
         }
     }
 
+    if (action === 'rescued') {
+        // Special case for flash sale rescue refund
+        // order here is the ORIGINAL order. refundAmount is what was given back to User A.
+        const refundAmount = order.rescueRefundAmount || 0;
+        balance.refundedAmount += refundAmount;
+        balance.totalRevenue -= refundAmount;
+        balance.cancelledOrders += 1; // Count as a "cancelled-due-to-rescue"
+    }
+
     // Calculate average order value
     if (balance.totalOrders > 0) {
         balance.averageOrderValue = Math.round(balance.totalRevenue / balance.totalOrders);
@@ -220,6 +229,13 @@ monthlyBalanceSchema.statics.recalculateForMonth = async function (year, month) 
             const manualRefund = order.refundRequest.refundAmount || order.totalAmount;
             refundedAmount += manualRefund;
             orderYield -= manualRefund;
+        }
+
+        // Deduct rescue refunds
+        if (order.status === 'rescued' || order.rescueRefundAmount) {
+            const rescueRefund = order.rescueRefundAmount || 0;
+            refundedAmount += rescueRefund;
+            orderYield -= rescueRefund;
         }
 
         totalRevenue += Math.max(0, orderYield);

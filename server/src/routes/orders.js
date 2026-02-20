@@ -3,8 +3,14 @@ import Order from '../models/Order.js';
 import MonthlyBalance from '../models/MonthlyBalance.js';
 import User from '../models/User.js';
 import FlashSale from '../models/FlashSale.js';
+import MenuItem from '../models/MenuItem.js';
+import xss from 'xss';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Apply authentication to all order routes
+router.use(authenticate);
 
 // GET /api/orders - Fetch all orders
 router.get('/', async (req, res) => {
@@ -34,10 +40,18 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET /api/orders/flash-sales - Fetch active rescue orders
+// GET /api/orders/flash-sales - Get active flash sales
 router.get('/flash-sales', async (req, res) => {
     try {
-        const sales = await FlashSale.find({ status: 'active' }).sort({ createdAt: -1 });
+        // TTL is 30 minutes, but MongoDB TTL deletion is asynchronous
+        // So we manually filter items older than 30 minutes
+        const thirtyMinutesAgo = Date.now() - (30 * 60 * 1000);
+
+        const sales = await FlashSale.find({
+            status: 'active',
+            createdAt: { $gte: thirtyMinutesAgo }
+        }).sort({ createdAt: -1 });
+
         res.json(sales);
     } catch (e) {
         console.error('GET /flash-sales error:', e);
@@ -50,6 +64,62 @@ router.post('/', async (req, res) => {
     try {
         const orderData = req.body;
         const io = req.app.get('io');
+
+        // Validate order has items
+        if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
+            return res.status(400).json({ error: 'Order must contain at least one item' });
+        }
+
+        // [SECURITY] Server-side price validation - Prevent price manipulation
+        if (!orderData.flashSaleId) {  // Skip for flash sales (different pricing)
+            const itemIds = orderData.items.map(i => i.id);
+            const menuItems = await MenuItem.find({ id: { $in: itemIds } });
+
+            // Calculate expected total from menu prices
+            let calculatedTotal = 0;
+            for (const orderItem of orderData.items) {
+                const menuItem = menuItems.find(m => m.id === orderItem.id);
+
+                if (!menuItem) {
+                    return res.status(400).json({ error: `Invalid item: ${orderItem.id}` });
+                }
+
+                if (!menuItem.available) {
+                    return res.status(400).json({ error: `Item unavailable: ${menuItem.name}` });
+                }
+
+                calculatedTotal += menuItem.price * orderItem.quantity;
+            }
+
+            // Verify client-sent total matches server calculation
+            if (Math.abs(calculatedTotal - orderData.totalAmount) > 0.01) {
+                console.error(`⚠️ PRICE MISMATCH! User ${orderData.userId} - Expected: ₹${calculatedTotal}, Sent: ₹${orderData.totalAmount}`);
+                return res.status(400).json({
+                    error: 'Total amount mismatch. Items might have changed prices.',
+                    expected: calculatedTotal,
+                    received: orderData.totalAmount
+                });
+            }
+
+            // [SECURITY] Calculate loyalty points server-side (5% of total)
+            orderData.loyaltyPointsEarned = Math.floor(calculatedTotal * 0.05);
+        }
+
+        // Validate total amount
+        if (!orderData.totalAmount || orderData.totalAmount <= 0) {
+            return res.status(400).json({ error: 'Invalid total amount' });
+        }
+
+        // [IDEMPOTENCY] Check for duplicate order submission
+        if (orderData.idempotencyKey) {
+            const existingOrder = await Order.findOne({
+                idempotencyKey: orderData.idempotencyKey
+            });
+            if (existingOrder) {
+                console.log(`⚠️ Duplicate order detected. Returning existing order: ${existingOrder.id}`);
+                return res.status(200).json(existingOrder); // Return existing order
+            }
+        }
 
         // [FLASH SALE LOGIC] pre-validation
         if (orderData.flashSaleId) {
@@ -70,43 +140,81 @@ router.post('/', async (req, res) => {
             );
             console.log(`⚡ Rescue Success! Refunded ₹${flashItem.refundAmount} to User A (${flashItem.originalUserId})`);
 
-            // 3. Update Original Order Status
-            await Order.findByIdAndUpdate(flashItem.originalOrderId, { status: 'rescued' });
+            // 3. Update Original Order Status and record refund
+            const originalOrder = await Order.findByIdAndUpdate(
+                flashItem.originalOrderId,
+                {
+                    status: 'rescued',
+                    rescueRefundAmount: flashItem.refundAmount
+                },
+                { new: true }
+            );
+
+            if (originalOrder) {
+                await MonthlyBalance.updateAfterOrder(originalOrder.toObject(), 'rescued');
+            }
 
             // Emit event to update User A's UI
             io.emit('orderUpdate', { id: flashItem.originalOrderId, status: 'rescued' });
         }
 
-        const order = new Order(orderData);
-        await order.save(); // Only save if validation passed
+        // Sanitize item notes to prevent XSS
+        if (orderData.items && Array.isArray(orderData.items)) {
+            orderData.items = orderData.items.map(item => ({
+                ...item,
+                notes: item.notes ? xss(item.notes.trim()) : undefined
+            }));
+        }
 
-        // Handle wallet payment deduction and loyalty points
+        // [SECURITY] Handle payment BEFORE creating order
         console.log(`[OrderDebug] Processing payment: Method=${orderData.paymentMethod}, User=${orderData.userId}, Amount=${orderData.totalAmount}`);
 
-        if (orderData.paymentMethod === 'wallet') {
-            const updatedUser = await User.findOneAndUpdate(
-                { id: orderData.userId },
-                {
-                    $inc: {
-                        balance: -Number(orderData.totalAmount),
-                        points: Number(orderData.loyaltyPointsEarned || 0)
-                    }
-                },
-                { new: true } // Return updated doc
-            );
-
-            if (updatedUser) {
-                console.log(`💳 Deducted ₹${orderData.totalAmount} from user ${orderData.userId}. New Balance: ${updatedUser.balance}`);
-            } else {
-                console.error(`❌ Failed to deduct wallet balance! User ${orderData.userId} not found.`);
-            }
-        } else if (orderData.paymentMethod === 'upi') {
-            // Even for UPI, increment energy points
-            await User.findOneAndUpdate(
-                { id: orderData.userId },
-                { $inc: { points: Number(orderData.loyaltyPointsEarned || 0) } }
-            );
+        // [SECURITY] Enforce wallet-only payments for campus
+        if (orderData.paymentMethod !== 'wallet') {
+            return res.status(400).json({
+                error: 'Only wallet payments are supported. Please add funds to your wallet.',
+                hint: 'Visit the campus office to top up your wallet balance.'
+            });
         }
+
+        // [SECURITY] Atomic balance check and deduction - Prevent negative balance
+        const updatedUser = await User.findOneAndUpdate(
+            {
+                id: orderData.userId,
+                balance: { $gte: orderData.totalAmount }  // Check balance >= amount
+            },
+            {
+                $inc: {
+                    balance: -Number(orderData.totalAmount),
+                    points: Number(orderData.loyaltyPointsEarned || 0)
+                },
+                $push: {
+                    transactions: {
+                        type: 'payment',
+                        amount: Number(orderData.totalAmount),
+                        method: 'wallet',
+                        orderId: orderData.id || 'N/A', // If client provided a temp ID or we use DB ID later
+                        timestamp: new Date()
+                    }
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            console.error(`❌ PAYMENT FAILED! User ${orderData.userId} - Insufficient balance or user not found`);
+            return res.status(400).json({
+                error: 'Insufficient wallet balance. Please add funds to continue.',
+                required: orderData.totalAmount,
+                hint: 'Visit the campus office to top up your wallet.'
+            });
+        }
+
+        console.log(`💳 Deducted ₹${orderData.totalAmount} from user ${orderData.userId}. New Balance: ₹${updatedUser.balance}`);
+
+        // Create order AFTER successful payment
+        const order = new Order(orderData);
+        await order.save();
 
         // Update monthly balance sheet
         await MonthlyBalance.updateAfterOrder(order.toObject(), 'new');
@@ -129,6 +237,57 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Order not found' });
         }
 
+        // [SECURITY] Validate status transitions based on role
+        if (req.body.status && req.body.status !== previousOrder.status) {
+            const newStatus = req.body.status;
+            const oldStatus = previousOrder.status;
+            const userRole = req.user?.role || 'student';  // Default to student if no auth
+
+            // Define allowed status transitions per role
+            const allowedTransitions = {
+                student: {
+                    placed: ['cancelled'],
+                    ready: ['picked_up']
+                },
+                cook: {
+                    placed: ['preparing', 'rejected'],
+                    preparing: ['ready'],
+                    awaiting_rescue: ['ready']
+                },
+                manager: {
+                    // Managers can do any transition
+                    '*': true
+                }
+            };
+
+            console.log(`[TransitionDebug] Order=${req.params.id}, Role=${userRole}, Transition: ${oldStatus} -> ${newStatus}`);
+
+            // Check if transition is allowed
+            if (userRole !== 'manager') {
+                const allowed = allowedTransitions[userRole]?.[oldStatus];
+
+                if (!allowed || !allowed.includes(newStatus)) {
+                    console.error(`⚠️ UNAUTHORIZED STATUS CHANGE! User role: ${userRole}, ID=${req.params.id}, ${oldStatus} → ${newStatus}`);
+                    return res.status(403).json({
+                        error: `Forbidden: As a ${userRole}, you cannot move order from ${oldStatus} to ${newStatus}`,
+                        details: {
+                            role: userRole,
+                            from: oldStatus,
+                            to: newStatus,
+                            allowed: allowed || []
+                        }
+                    });
+                }
+            }
+
+            console.log(`✅ Status transition allowed: ${oldStatus} → ${newStatus} (role: ${userRole})`);
+        }
+
+        // Sanitize rejection reason if provided
+        if (req.body.rejectionReason) {
+            req.body.rejectionReason = xss(req.body.rejectionReason.trim());
+        }
+
         const order = await Order.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -137,6 +296,20 @@ router.put('/:id', async (req, res) => {
 
         // [FLASH SALE LOGIC] Intercept Cancellation of Preparing Items
         if (req.body.status === 'cancelled' && previousOrder.status === 'preparing') {
+            // [SECURITY] Prevent refund loop - Block cancellation of rescued orders
+            if (previousOrder.status === 'rescued') {
+                return res.status(400).json({
+                    error: 'Cannot cancel already rescued orders'
+                });
+            }
+
+            // [SECURITY] Prevent cancelling flash sale purchases (rescue orders)
+            if (previousOrder.flashSaleId) {
+                return res.status(400).json({
+                    error: 'Cannot cancel rescue/flash sale purchases'
+                });
+            }
+
             // Calculate non-refundable part
             const nonRefundableItems = previousOrder.items.filter(i => !i.isRefundable);
 

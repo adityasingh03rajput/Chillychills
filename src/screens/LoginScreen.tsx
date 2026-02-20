@@ -36,11 +36,11 @@ export const LoginScreen = ({ onLogin }: { onLogin: (role: string, userId: strin
       const cleanId = activeTab === 'staff' ? staffId.trim() : email.trim();
 
       if (authMode === 'signup' && activeTab === 'student') {
-        const user = await api.signup(cleanId, fullName.trim(), cleanPassword, 'student');
+        const { user } = await api.signup(cleanId, fullName.trim(), cleanPassword, 'student');
         toast.success(`Identity Verified: Welcome ${user.name} 🎓`);
         onLogin(user.role, user.id);
       } else {
-        const user = await api.login(cleanId, cleanPassword);
+        const { user } = await api.login(cleanId, cleanPassword);
 
         const welcomeMsg = user.role === 'student' ? 'Access Granted! 🎓' :
           user.role === 'cook' ? 'Welcome back, Chef! 👨‍🍳' :
@@ -198,8 +198,8 @@ export const LoginScreen = ({ onLogin }: { onLogin: (role: string, userId: strin
           <div className="mt-10 pt-8 border-t border-white/5 border-dashed flex gap-3">
             <button
               onClick={() => {
-                if (activeTab === 'student') { setEmail('user'); setPassword('123'); }
-                else { setStaffId('cook'); setPassword('123'); }
+                if (activeTab === 'student') { setEmail('student_sam'); setPassword('chilly123'); }
+                else { setStaffId('chef_mario'); setPassword('chilly123'); }
                 toast.info('Data Link Established');
               }}
               className="flex-1 h-12 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-white/40 uppercase tracking-widest"
@@ -208,7 +208,7 @@ export const LoginScreen = ({ onLogin }: { onLogin: (role: string, userId: strin
             </button>
             {activeTab === 'staff' && (
               <button
-                onClick={() => { setStaffId('manager'); setPassword('123'); toast.info('Admin override detected'); }}
+                onClick={() => { setStaffId('admin_jack'); setPassword('chilly123'); toast.info('Admin override detected'); }}
                 className="flex-1 h-12 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-white/40 uppercase tracking-widest"
               >
                 Manager

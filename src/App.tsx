@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+// Build 2026-01-30-T203100
 import { motion, AnimatePresence } from 'motion/react';
 import { Layout } from './components/Layout';
 import { LoginScreen } from './screens/LoginScreen';
@@ -7,7 +8,7 @@ import { MenuScreen } from './screens/MenuScreen';
 import { CartScreen } from './screens/CartScreen';
 import { OrdersScreen } from './screens/OrdersScreen';
 import { Navbar } from './components/Navbar';
-import { api } from './utils/api';
+import { api, removeToken } from './utils/api';
 import { INITIAL_MENU } from './utils/initialData';
 import { MenuItem, CartItem, Order, Feedback } from './utils/types';
 import { Toaster, toast } from 'sonner';
@@ -60,11 +61,20 @@ export default function App() {
         const persisted = localStorage.getItem('chilly_user_session');
         if (persisted) {
           const { role: r, userId: id } = JSON.parse(persisted);
-          setRole(r);
-          setUserId(id);
           if (r === 'student') {
-            setActiveTab('home');
-            api.getUser(id).then(setUser).catch(console.error);
+            try {
+              const userData = await api.getUser(id);
+              setUser(userData);
+              setRole(r);
+              setUserId(id);
+              setActiveTab('home');
+            } catch (e) {
+              console.warn('Session expired or invalid token');
+              handleLogout();
+            }
+          } else {
+            setRole(r);
+            setUserId(id);
           }
         }
 
@@ -107,7 +117,7 @@ export default function App() {
         const data = await api.getOrders();
         if (data && isSubscribed) {
           setOrders(data);
-          previousOrderIds = new Set(data.map(o => o.id));
+          previousOrderIds = new Set(data.map((o: any) => o.id));
         }
       } catch (e) {
         console.error('Orders fetch failed:', e);
@@ -193,6 +203,7 @@ export default function App() {
 
   const handleLogout = async () => {
     localStorage.removeItem('chilly_user_session');
+    removeToken();
     setRole(null);
     setUserId('');
     setCart([]);
@@ -213,8 +224,9 @@ export default function App() {
     placingOrderRef.current = true;
     setIsPlacingOrder(true);
 
-    const token = `${branch || 'A'}${Math.floor(Math.random() * 900) + 100}`;
+    const token = `${branch || 'A'}${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
     const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+    const idempotencyKey = `${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     const newOrder = {
       id: `temp-${Date.now()}`,
@@ -225,6 +237,7 @@ export default function App() {
       userId,
       status: 'placed' as const,
       createdAt: Date.now(),
+      idempotencyKey,
       ...details
     };
 
@@ -244,6 +257,7 @@ export default function App() {
         token,
         branch: branch || 'A',
         userId,
+        idempotencyKey,
         ...details
       });
 
@@ -289,7 +303,7 @@ export default function App() {
       return;
     }
 
-    const token = `R${Math.floor(Math.random() * 900) + 100}`; // 'R' for Rescue
+    const token = `R${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`; // 'R' for Rescue
 
     try {
       await api.createOrder({
@@ -300,6 +314,7 @@ export default function App() {
         status: 'preparing', // Rescued food is already preparing/ready
         paymentMethod: 'wallet',
         flashSaleId: saleId,
+        loyaltyPointsEarned: 500,
         items: [{
           id: 'flash',
           name: 'Rescue Deal',

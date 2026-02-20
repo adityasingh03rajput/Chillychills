@@ -59,7 +59,13 @@ const orderSchema = new mongoose.Schema({
         cancelledBy: String,
         resolvedAt: Number
     },
-    rejectionReason: String
+    rejectionReason: String,
+    rescueRefundAmount: Number,
+    idempotencyKey: {
+        type: String,
+        sparse: true,
+        index: true
+    }
 }, {
     timestamps: false,
     versionKey: false,

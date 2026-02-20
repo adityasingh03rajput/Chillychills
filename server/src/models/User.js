@@ -28,7 +28,22 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
-    }
+    },
+    transactions: [{
+        type: {
+            type: String,
+            enum: ['topup', 'payment', 'refund', 'gift_received', 'gift_sent']
+        },
+        amount: Number,
+        method: String,  // 'upi', 'cash', 'wallet'
+        razorpayPaymentId: String,
+        razorpayOrderId: String,
+        orderId: String,
+        timestamp: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, {
     timestamps: true,
     versionKey: false

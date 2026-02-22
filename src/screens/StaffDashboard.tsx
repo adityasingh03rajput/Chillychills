@@ -137,8 +137,11 @@ export const StaffDashboard = ({ orders, onUpdateStatus, onLogout }: StaffDashbo
                       order.status === 'preparing' ? 'bg-blue-600/10 text-blue-500 border-blue-500/20' :
                         order.status === 'awaiting_rescue' ? 'bg-purple-600/20 text-purple-400 border-purple-500/30' :
                           'bg-[var(--accent-green)]/10 text-[var(--accent-green)] border-[var(--accent-green)]/20'
-                      }`}>
+                      }`}> 
                       {order.status === 'awaiting_rescue' ? 'RESALE LISTED' : order.status}
+                    </div>
+                    <div className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border bg-white/5 text-white/50 border-white/10">
+                      {(order.paymentMethod || 'wallet').toUpperCase()}
                     </div>
                   </div>
                   <div className="text-right">

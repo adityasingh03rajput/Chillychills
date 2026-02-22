@@ -19,12 +19,16 @@ export const UpiTopUpModal = ({ isOpen, onClose, userId, onSuccess }: UpiTopUpMo
     const [utr, setUtr] = useState<string>('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [merchantDetails, setMerchantDetails] = useState<{ upiId: string; name: string } | null>(null);
+    const [simulationMode, setSimulationMode] = useState<boolean>(false);
 
     useEffect(() => {
         if (isOpen) {
             setStep('amount');
             setUtr('');
             api.getPaymentDetails().then(setMerchantDetails).catch(console.error);
+            api.getPaymentSimulationStatus()
+                .then((s: any) => setSimulationMode(Boolean(s?.simulationMode)))
+                .catch(() => setSimulationMode(false));
         }
     }, [isOpen]);
 
@@ -34,14 +38,15 @@ export const UpiTopUpModal = ({ isOpen, onClose, userId, onSuccess }: UpiTopUpMo
     };
 
     const handleVerify = async () => {
-        if (utr.length !== 12) {
+        if (!simulationMode && utr.length !== 12) {
             toast.error('Invalid UTR. It must be exactly 12 digits.');
             return;
         }
 
         setIsVerifying(true);
         try {
-            await api.verifyUTR(utr, Number(amount));
+            const utrToSend = simulationMode ? '000000000000' : utr;
+            await api.verifyUTR(utrToSend, Number(amount), 'upi');
             setStep('verify');
             if (window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
             setTimeout(() => {
@@ -134,56 +139,66 @@ export const UpiTopUpModal = ({ isOpen, onClose, userId, onSuccess }: UpiTopUpMo
                             {step === 'payment' && (
                                 <div className="space-y-6">
                                     <div className="flex flex-col items-center gap-6">
-                                        <div className="relative group">
-                                            <div className="absolute -inset-4 bg-orange-500/20 rounded-[40px] blur-2xl group-hover:bg-orange-500/30 transition-all opacity-0 group-hover:opacity-100" />
-                                            <div className="relative bg-white p-4 rounded-[32px] shadow-2xl">
-                                                <img src={qrUrl} alt="UPI QR" className="w-48 h-48 block" />
+                                        {!simulationMode && (
+                                            <div className="relative group">
+                                                <div className="absolute -inset-4 bg-orange-500/20 rounded-[40px] blur-2xl group-hover:bg-orange-500/30 transition-all opacity-0 group-hover:opacity-100" />
+                                                <div className="relative bg-white p-4 rounded-[32px] shadow-2xl">
+                                                    <img src={qrUrl} alt="UPI QR" className="w-48 h-48 block" />
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
                                         <div className="text-center">
-                                            <p className="text-white font-black text-[18px] tracking-tight mb-1">Scan & Pay ₹{amount}</p>
-                                            <p className="text-white/30 text-[12px] font-bold uppercase tracking-widest">{merchantDetails?.name}</p>
+                                            <p className="text-white font-black text-[18px] tracking-tight mb-1">{simulationMode ? `Simulate Payment ₹${amount}` : `Scan & Pay ₹${amount}`}</p>
+                                            {!simulationMode && (
+                                                <p className="text-white/30 text-[12px] font-bold uppercase tracking-widest">{merchantDetails?.name}</p>
+                                            )}
                                         </div>
 
                                         <div className="w-full space-y-3">
-                                            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between group">
-                                                <div className="flex flex-col">
-                                                    <span className="text-white/20 text-[10px] font-black uppercase tracking-widest mb-1">VPA Context</span>
-                                                    <span className="text-white font-black text-[14px]">{merchantDetails?.upiId}</span>
+                                            {!simulationMode && (
+                                                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between group">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-white/20 text-[10px] font-black uppercase tracking-widest mb-1">VPA Context</span>
+                                                        <span className="text-white font-black text-[14px]">{merchantDetails?.upiId}</span>
+                                                    </div>
+                                                    <button onClick={() => handleCopy(merchantDetails?.upiId || '')} className="p-2 text-white/20 group-hover:text-white transition-colors">
+                                                        <Copy size={16} />
+                                                    </button>
                                                 </div>
-                                                <button onClick={() => handleCopy(merchantDetails?.upiId || '')} className="p-2 text-white/20 group-hover:text-white transition-colors">
-                                                    <Copy size={16} />
-                                                </button>
-                                            </div>
+                                            )}
                                         </div>
                                     </div>
 
                                     <div className="space-y-4">
-                                        <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex gap-3 text-orange-500/80">
-                                            <AlertCircle size={18} className="shrink-0 mt-0.5" />
-                                            <p className="text-[11px] font-bold leading-relaxed uppercase tracking-wider">
-                                                After paying, you must enter the 12-digit UTR number from your bank app.
-                                            </p>
-                                        </div>
+                                        {!simulationMode && (
+                                            <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex gap-3 text-orange-500/80">
+                                                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                                                <p className="text-[11px] font-bold leading-relaxed uppercase tracking-wider">
+                                                    After paying, you must enter the 12-digit UTR number from your bank app.
+                                                </p>
+                                            </div>
+                                        )}
 
-                                        <div className="space-y-2">
-                                            <p className="text-white/30 text-[10px] font-black uppercase tracking-widest ml-1">Step 2: Enter Transaction ID (UTR)</p>
-                                            <Input
-                                                placeholder="Enter 12-digit UTR"
-                                                value={utr}
-                                                maxLength={12}
-                                                onChange={(e) => setUtr(e.target.value.replace(/\D/g, ''))}
-                                                className="h-16 rounded-2xl bg-white/5 border-white/10 text-white font-black text-center text-[18px] tracking-[0.2em]"
-                                            />
-                                        </div>
+                                        {!simulationMode && (
+                                            <div className="space-y-2">
+                                                <p className="text-white/30 text-[10px] font-black uppercase tracking-widest ml-1">Step 2: Enter Transaction ID (UTR)</p>
+                                                <Input
+                                                    placeholder="Enter 12-digit UTR"
+                                                    value={utr}
+                                                    maxLength={12}
+                                                    onChange={(e) => setUtr(e.target.value.replace(/\D/g, ''))}
+                                                    className="h-16 rounded-2xl bg-white/5 border-white/10 text-white font-black text-center text-[18px] tracking-[0.2em]"
+                                                />
+                                            </div>
+                                        )}
 
                                         <Button
-                                            disabled={utr.length !== 12 || isVerifying}
+                                            disabled={(!simulationMode && utr.length !== 12) || isVerifying}
                                             onClick={handleVerify}
                                             className="w-full h-16 rounded-2xl bg-[var(--accent-green)] text-white font-black uppercase tracking-widest text-[14px]"
                                         >
-                                            {isVerifying ? <Loader2 className="animate-spin" /> : 'Validate & Credit'}
+                                            {isVerifying ? <Loader2 className="animate-spin" /> : (simulationMode ? 'Simulate & Credit' : 'Validate & Credit')}
                                         </Button>
                                     </div>
                                 </div>

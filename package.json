@@ -71,6 +71,10 @@
       },
       "scripts": {
             "dev": "vite",
-            "build": "vite build"
+            "build": "vite build",
+            "seed:users": "npm --prefix server run seed:users",
+            "wallet:credit": "npm --prefix server run wallet:credit",
+            "users:export": "npm --prefix server run users:export",
+            "users:purge": "npm --prefix server run users:purge"
       }
 }

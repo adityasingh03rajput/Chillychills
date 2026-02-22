@@ -1,0 +1,106 @@
+[
+  {
+    "_id": "699b3f8190341a1f44e4ac3e",
+    "id": "student_test",
+    "name": "Demo Student",
+    "role": "student",
+    "balance": 5500,
+    "points": 50,
+    "password": "student123",
+    "transactions": [],
+    "createdAt": "2026-02-22T17:40:17.872Z",
+    "updatedAt": "2026-02-22T17:40:22.203Z"
+  },
+  {
+    "_id": "699b3f8190341a1f44e4ac3b",
+    "id": "cook_test_001",
+    "name": "Head Chef",
+    "role": "cook",
+    "balance": 10000,
+    "points": 200,
+    "password": "cook123",
+    "transactions": [],
+    "createdAt": "2026-02-22T17:40:17.597Z",
+    "updatedAt": "2026-02-22T17:40:22.203Z"
+  },
+  {
+    "_id": "697cc2804a54ff1a3ce419a3",
+    "id": "admin_jack",
+    "name": "Jack (Manager)",
+    "role": "manager",
+    "balance": 6000,
+    "points": 0,
+    "password": "$2b$10$osvKozRdES5L3ccf1V5gCuQ.Bs0cFW7.SJBo.XZ/61GDxnPx4VcaG",
+    "transactions": [],
+    "createdAt": "2026-01-30T14:38:56.065Z",
+    "updatedAt": "2026-02-22T17:40:22.203Z"
+  },
+  {
+    "_id": "697cc2804a54ff1a3ce419a4",
+    "id": "chef_mario",
+    "name": "Mario (Cook)",
+    "role": "cook",
+    "balance": 5000,
+    "points": 0,
+    "password": "$2b$10$osvKozRdES5L3ccf1V5gCuQ.Bs0cFW7.SJBo.XZ/61GDxnPx4VcaG",
+    "transactions": [],
+    "createdAt": "2026-01-30T14:38:56.066Z",
+    "updatedAt": "2026-02-22T17:40:22.203Z"
+  },
+  {
+    "_id": "699b3f7290341a1f44e4ac38",
+    "id": "manager_test_001",
+    "name": "Prime Manager",
+    "role": "manager",
+    "balance": 15000,
+    "points": 500,
+    "password": "manager123",
+    "transactions": [],
+    "createdAt": "2026-02-22T17:40:02.952Z",
+    "updatedAt": "2026-02-22T17:40:22.203Z"
+  },
+  {
+    "_id": "697cc2804a54ff1a3ce419a5",
+    "id": "student_sam",
+    "name": "Sam (Student)",
+    "role": "student",
+    "balance": 5000,
+    "points": 14,
+    "password": "$2b$10$osvKozRdES5L3ccf1V5gCuQ.Bs0cFW7.SJBo.XZ/61GDxnPx4VcaG",
+    "transactions": [
+      {
+        "type": "payment",
+        "amount": 40,
+        "method": "wallet",
+        "orderId": "N/A",
+        "timestamp": "2026-02-13T05:38:18.015Z",
+        "_id": "698eb8cabe8ef6e6a311ad71"
+      },
+      {
+        "type": "payment",
+        "amount": 120,
+        "method": "wallet",
+        "orderId": "N/A",
+        "timestamp": "2026-02-14T10:09:46.790Z",
+        "_id": "699049ea45220d5cf7d5adee"
+      },
+      {
+        "type": "gift_sent",
+        "amount": 220,
+        "method": "wallet",
+        "timestamp": "2026-02-18T12:31:59.020Z",
+        "_id": "6995b13f49397aff148b2d17"
+      },
+      {
+        "type": "payment",
+        "amount": 120,
+        "method": "wallet",
+        "orderId": "N/A",
+        "timestamp": "2026-02-18T12:33:28.912Z",
+        "_id": "6995b19849397aff148b2d63"
+      }
+    ],
+    "createdAt": "2026-01-30T14:38:56.066Z",
+    "updatedAt": "2026-02-22T17:40:22.203Z"
+  }
+]

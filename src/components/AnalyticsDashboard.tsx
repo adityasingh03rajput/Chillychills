@@ -15,6 +15,7 @@ interface AnalyticsDashboardProps {
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'customers' | 'menu' | 'staff'>('overview');
     const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // Data State
     const [realTimeStats, setRealTimeStats] = useState<any>(null);
@@ -29,6 +30,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
     const fetchAllData = async () => {
         try {
             setLoading(true);
+            setErrorMessage(null);
             const [rt, cust, pop, emp] = await Promise.all([
                 api.getRealTimeStats(),
                 api.getCustomerBehavior(),
@@ -42,7 +44,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
             setEmployeeStats(emp);
         } catch (error) {
             console.error('Analytics fetch error:', error);
-            toast.error('Failed to load analytics data');
+            const msg = (error as any)?.message || 'Failed to load analytics data';
+            setErrorMessage(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
@@ -52,6 +56,40 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
         return (
             <div className="flex items-center justify-center h-full bg-black">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent-orange)]" />
+            </div>
+        );
+    }
+
+    if (errorMessage) {
+        return (
+            <div className="h-full flex flex-col bg-black overflow-hidden pt-safe">
+                <div className="h-[64px] px-6 border-b border-white/10 flex items-center justify-between shrink-0 bg-stone-900/50 backdrop-blur-xl">
+                    <div>
+                        <h2 className="text-[20px] font-black text-white tracking-tight uppercase leading-none">Sales Dashboard</h2>
+                        <div className="flex items-center gap-1.5 mt-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-orange)] animate-pulse" />
+                            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Live Updates</p>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={onClose}
+                        className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white active:scale-90 transition-all"
+                    >
+                        <X size={20} strokeWidth={3} />
+                    </button>
+                </div>
+
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                    <div className="text-[12px] font-black text-white/40 uppercase tracking-widest mb-3">Sync Failed</div>
+                    <div className="text-[14px] font-bold text-white/70 max-w-md break-words">{errorMessage}</div>
+                    <button
+                        onClick={fetchAllData}
+                        className="mt-6 h-[48px] px-6 rounded-xl bg-white text-black font-black uppercase tracking-widest"
+                    >
+                        Retry
+                    </button>
+                </div>
             </div>
         );
     }
@@ -264,6 +302,75 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ onClose 
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === 'customers' && !customerStats && (
+                    <div className="opacity-30 text-center py-24">
+                        <div className="text-[12px] font-black uppercase tracking-widest text-white/40">No user analytics yet</div>
+                    </div>
+                )}
+
+                {activeTab === 'menu' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-1 h-6 bg-[var(--accent-orange)] rounded-full" />
+                            <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Top Dishes</h3>
+                        </div>
+
+                        {popularItems.length === 0 ? (
+                            <div className="opacity-30 text-center py-24">
+                                <div className="text-[12px] font-black uppercase tracking-widest text-white/40">No menu stats yet</div>
+                            </div>
+                        ) : (
+                            <div className="bg-stone-900 rounded-xl border border-white/5 overflow-hidden">
+                                {popularItems.map((item, idx) => (
+                                    <div key={item.id} className="flex items-center gap-4 p-4 border-b border-white/5 last:border-none group">
+                                        <div className="w-8 h-8 flex items-center justify-center font-black text-white/20 text-[12px] border border-white/10 rounded-lg">
+                                            0{idx + 1}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-black text-white text-[14px] uppercase truncate">{item.name}</div>
+                                            <div className="text-[10px] text-white/30 font-black uppercase mt-0.5">{item.totalQuantity} Volume</div>
+                                        </div>
+                                        <div className="font-black text-[var(--accent-green)] text-[16px]">₹{item.totalRevenue.toLocaleString()}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'staff' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-1 h-6 bg-[var(--accent-orange)] rounded-full" />
+                            <h3 className="text-[18px] font-black text-white uppercase tracking-tight">Kitchen Performance</h3>
+                        </div>
+
+                        {!employeeStats ? (
+                            <div className="opacity-30 text-center py-24">
+                                <div className="text-[12px] font-black uppercase tracking-widest text-white/40">No staff stats yet</div>
+                            </div>
+                        ) : (
+                            <div className="bg-stone-900 p-6 rounded-xl border border-white/5">
+                                <div className="text-center">
+                                    <div className="text-[48px] font-black text-white tracking-tighter leading-none mb-2">{employeeStats.efficiency}%</div>
+                                    <div className="text-[12px] font-black text-white/20 uppercase tracking-widest">Efficiency Score</div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 mt-8">
+                                    <div className="p-4 bg-white/5 border border-white/5 rounded-xl text-center">
+                                        <div className="text-[18px] font-black text-white">{employeeStats.totalOrders}</div>
+                                        <div className="text-[10px] font-black text-white/20 uppercase mt-1">Total Orders</div>
+                                    </div>
+                                    <div className="p-4 bg-white/5 border border-white/5 rounded-xl text-center">
+                                        <div className="text-[18px] font-black text-[var(--accent-green)]">{employeeStats.completedOrders}</div>
+                                        <div className="text-[10px] font-black text-white/20 uppercase mt-1">Completed</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

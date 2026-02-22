@@ -9,6 +9,8 @@ import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const SIMULATION_MODE = process.env.PAYMENT_SIMULATION_MODE === 'true' || process.env.NODE_ENV !== 'production';
+
 // Apply authentication to all order routes
 router.use(authenticate);
 
@@ -88,17 +90,24 @@ router.post('/', async (req, res) => {
                     return res.status(400).json({ error: `Item unavailable: ${menuItem.name}` });
                 }
 
+                // Normalize client payload (prevent stale price data in dev)
+                orderItem.price = menuItem.price;
                 calculatedTotal += menuItem.price * orderItem.quantity;
             }
 
             // Verify client-sent total matches server calculation
             if (Math.abs(calculatedTotal - orderData.totalAmount) > 0.01) {
                 console.error(`⚠️ PRICE MISMATCH! User ${orderData.userId} - Expected: ₹${calculatedTotal}, Sent: ₹${orderData.totalAmount}`);
-                return res.status(400).json({
-                    error: 'Total amount mismatch. Items might have changed prices.',
-                    expected: calculatedTotal,
-                    received: orderData.totalAmount
-                });
+                if (process.env.NODE_ENV === 'production') {
+                    return res.status(400).json({
+                        error: 'Total amount mismatch. Items might have changed prices.',
+                        expected: calculatedTotal,
+                        received: orderData.totalAmount
+                    });
+                }
+
+                // In dev, auto-heal by trusting server prices
+                orderData.totalAmount = calculatedTotal;
             }
 
             // [SECURITY] Calculate loyalty points server-side (5% of total)
@@ -169,48 +178,76 @@ router.post('/', async (req, res) => {
         // [SECURITY] Handle payment BEFORE creating order
         console.log(`[OrderDebug] Processing payment: Method=${orderData.paymentMethod}, User=${orderData.userId}, Amount=${orderData.totalAmount}`);
 
-        // [SECURITY] Enforce wallet-only payments for campus
-        if (orderData.paymentMethod !== 'wallet') {
-            return res.status(400).json({
-                error: 'Only wallet payments are supported. Please add funds to your wallet.',
-                hint: 'Visit the campus office to top up your wallet balance.'
-            });
-        }
+        const method = orderData.paymentMethod || 'wallet';
+        orderData.paymentMethod = method;
 
-        // [SECURITY] Atomic balance check and deduction - Prevent negative balance
-        const updatedUser = await User.findOneAndUpdate(
-            {
-                id: orderData.userId,
-                balance: { $gte: orderData.totalAmount }  // Check balance >= amount
-            },
-            {
-                $inc: {
-                    balance: -Number(orderData.totalAmount),
-                    points: Number(orderData.loyaltyPointsEarned || 0)
+        if (method === 'wallet') {
+            const updatedUser = await User.findOneAndUpdate(
+                {
+                    id: orderData.userId,
+                    balance: { $gte: orderData.totalAmount }
                 },
-                $push: {
-                    transactions: {
-                        type: 'payment',
-                        amount: Number(orderData.totalAmount),
-                        method: 'wallet',
-                        orderId: orderData.id || 'N/A', // If client provided a temp ID or we use DB ID later
-                        timestamp: new Date()
+                {
+                    $inc: {
+                        balance: -Number(orderData.totalAmount),
+                        points: Number(orderData.loyaltyPointsEarned || 0)
+                    },
+                    $push: {
+                        transactions: {
+                            type: 'payment',
+                            amount: Number(orderData.totalAmount),
+                            method: 'wallet',
+                            orderId: orderData.id || 'N/A',
+                            timestamp: new Date()
+                        }
                     }
-                }
-            },
-            { new: true }
-        );
+                },
+                { new: true }
+            );
 
-        if (!updatedUser) {
-            console.error(`❌ PAYMENT FAILED! User ${orderData.userId} - Insufficient balance or user not found`);
-            return res.status(400).json({
-                error: 'Insufficient wallet balance. Please add funds to continue.',
-                required: orderData.totalAmount,
-                hint: 'Visit the campus office to top up your wallet.'
-            });
+            if (!updatedUser) {
+                console.error(`❌ PAYMENT FAILED! User ${orderData.userId} - Insufficient balance or user not found`);
+                return res.status(400).json({
+                    error: 'Insufficient wallet balance. Please add funds to continue.',
+                    required: orderData.totalAmount,
+                    hint: 'Visit the campus office to top up your wallet.'
+                });
+            }
+
+            console.log(`💳 Deducted ₹${orderData.totalAmount} from user ${orderData.userId}. New Balance: ₹${updatedUser.balance}`);
+        } else if (method === 'upi') {
+            if (!SIMULATION_MODE) {
+                return res.status(400).json({
+                    error: 'UPI payments are not enabled on this server.',
+                    hint: 'Enable PAYMENT_SIMULATION_MODE=true to simulate UPI payments.'
+                });
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1200));
+
+            const txId = `SIMUPI${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+            orderData.paymentTransactionId = txId;
+
+            await User.findOneAndUpdate(
+                { id: orderData.userId },
+                {
+                    $inc: { points: Number(orderData.loyaltyPointsEarned || 0) },
+                    $push: {
+                        transactions: {
+                            type: 'payment',
+                            amount: Number(orderData.totalAmount),
+                            method: 'simulated_upi',
+                            transactionId: txId,
+                            orderId: orderData.id || 'N/A',
+                            timestamp: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+        } else {
+            return res.status(400).json({ error: 'Invalid payment method' });
         }
-
-        console.log(`💳 Deducted ₹${orderData.totalAmount} from user ${orderData.userId}. New Balance: ₹${updatedUser.balance}`);
 
         // Create order AFTER successful payment
         const order = new Order(orderData);
@@ -243,16 +280,28 @@ router.put('/:id', async (req, res) => {
             const oldStatus = previousOrder.status;
             const userRole = req.user?.role || 'student';  // Default to student if no auth
 
+            if (userRole === 'student' && newStatus === 'cancelled' && (oldStatus === 'accepted' || oldStatus === 'preparing')) {
+                const hasNonRefundable = Array.isArray(previousOrder.items) && previousOrder.items.some(i => !i.isRefundable);
+                if (hasNonRefundable) {
+                    return res.status(403).json({
+                        error: 'Forbidden: Non-refundable items cannot be cancelled once accepted/preparing.'
+                    });
+                }
+            }
+
             // Define allowed status transitions per role
             const allowedTransitions = {
                 student: {
                     placed: ['cancelled'],
+                    accepted: ['cancelled'],
+                    preparing: ['cancelled'],
                     ready: ['picked_up']
                 },
                 cook: {
                     placed: ['preparing', 'rejected'],
                     preparing: ['ready'],
-                    awaiting_rescue: ['ready']
+                    awaiting_rescue: ['ready'],
+                    ready: ['picked_up']
                 },
                 manager: {
                     // Managers can do any transition

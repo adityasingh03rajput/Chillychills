@@ -7,6 +7,10 @@
     "scripts": {
         "start": "node src/index.js",
         "dev": "node --watch src/index.js",
+        "seed:users": "node seed_users.js",
+        "wallet:credit": "node credit_wallet.js",
+        "users:export": "node export_users.js",
+        "users:purge": "node purge_users.js",
         "test": "echo \"All tests passed\" && exit 0"
     },
     "keywords": [

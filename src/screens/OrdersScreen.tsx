@@ -162,6 +162,11 @@ const ActiveOrderCard = ({ order, onCancel }: { order: Order, onCancel: () => vo
                <p className="text-[12px] font-black text-white/30 uppercase tracking-widest mb-1.5 leading-none">Yield Clear</p>
                <p className="text-[24px] font-black text-white tracking-tighter tabular-nums leading-none">₹{order.totalAmount}</p>
             </div>
+            <div className="flex items-end">
+               <span className="text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest bg-white/5 border border-white/10 text-white/50">
+                  {(order.paymentMethod || 'wallet').toUpperCase()}
+               </span>
+            </div>
             {order.status !== 'ready' && (
                <Button onClick={onCancel} variant="none" className="bg-red-500/10 border border-red-500/20 text-red-500 h-12 px-6 rounded-lg text-[12px] font-black uppercase tracking-widest active:bg-red-500/20">
                   Revoke
@@ -214,7 +219,12 @@ const PastOrderCard = ({ order, onRequestRefund, onSubmitFeedback }: any) => {
 
          <div className="flex items-center justify-between pt-4 border-t border-dashed border-white/5 mb-6">
             <span className="text-[12px] font-black text-white/20 uppercase tracking-widest">Grand Total</span>
-            <span className="text-[18px] font-black text-white tabular-nums">₹{order.totalAmount}</span>
+            <div className="flex items-center gap-2">
+               <span className="text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest bg-white/5 border border-white/10 text-white/50">
+                  {(order.paymentMethod || 'wallet').toUpperCase()}
+               </span>
+               <span className="text-[18px] font-black text-white tabular-nums">₹{order.totalAmount}</span>
+            </div>
          </div>
 
          <div className="flex gap-2">

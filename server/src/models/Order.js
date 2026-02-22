@@ -32,6 +32,16 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    paymentMethod: {
+        type: String,
+        enum: ['upi', 'wallet'],
+        default: 'wallet',
+        index: true
+    },
+    paymentTransactionId: {
+        type: String,
+        index: true
+    },
     branch: {
         type: String,
         required: true,

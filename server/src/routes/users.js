@@ -1,12 +1,15 @@
 import express from 'express';
 import User from '../models/User.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // GET /api/users - Fetch all users in the system
-router.get('/', async (req, res) => {
+router.get('/', authenticate, authorize('manager'), async (req, res) => {
     try {
-        const users = await User.find().sort({ name: 1 });
+        const users = await User.find()
+            .select('-password')
+            .sort({ name: 1 });
         res.json(users);
     } catch (error) {
         console.error('GET /users error:', error);
@@ -15,20 +18,19 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/users/:id - Fetch user data including balance
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
     try {
-        let user = await User.findOne({ id: req.params.id });
+        const requestedId = req.params.id;
 
-        // Auto-create user if not exists for demo purposes
+        // Only managers can fetch arbitrary user profiles
+        if (req.user.role !== 'manager' && req.user.id !== requestedId) {
+            return res.status(403).json({ error: 'Forbidden: You can only access your own profile.' });
+        }
+
+        const user = await User.findOne({ id: requestedId }).select('-password');
+
         if (!user) {
-            user = new User({
-                id: req.params.id,
-                name: 'Student User',
-                role: 'student',
-                balance: 500, // Starting balance
-                points: 0
-            });
-            await user.save();
+            return res.status(404).json({ error: 'User not found' });
         }
 
         res.json(user);

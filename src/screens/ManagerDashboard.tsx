@@ -375,6 +375,7 @@ export const ManagerDashboard = ({ orders, menu, onUpdateOrder, onUpdateMenu, on
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-[18px] font-black text-white tabular-nums leading-none">₹{order.totalAmount}</p>
+                      <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] mt-1 block">{(order.paymentMethod || 'wallet').toUpperCase()}</span>
                       <span className="text-[8px] font-black text-white/10 uppercase tracking-[0.2em] mt-1 block">VERIFIED</span>
                     </div>
                   </div>

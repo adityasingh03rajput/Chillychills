@@ -6,10 +6,12 @@ import { Trash2, CreditCard, Wallet, ShoppingBag, Clock, Sparkles, ChevronRight,
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Input } from '../components/ui/Input';
 import { toast } from 'sonner';
+import { UpiOrderCheckoutModal } from '../components/UpiOrderCheckoutModal';
 
 export const CartScreen = ({ cart, onUpdateQuantity, onPlaceOrder, total, isPlacingOrder, user }: any) => {
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'wallet'>('upi');
   const [scheduledTime, setScheduledTime] = useState<string>('');
+  const [isUpiCheckoutOpen, setIsUpiCheckoutOpen] = useState(false);
 
   const taxes = 0;
   const grandTotal = total + taxes;
@@ -27,6 +29,11 @@ export const CartScreen = ({ cart, onUpdateQuantity, onPlaceOrder, total, isPlac
     }
 
     if (window.navigator.vibrate) window.navigator.vibrate(10);
+
+    if (paymentMethod === 'upi') {
+      setIsUpiCheckoutOpen(true);
+      return;
+    }
 
     onPlaceOrder({
       paymentMethod,
@@ -49,6 +56,20 @@ export const CartScreen = ({ cart, onUpdateQuantity, onPlaceOrder, total, isPlac
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden pt-6 pb-24 px-6">
+
+      <UpiOrderCheckoutModal
+        isOpen={isUpiCheckoutOpen}
+        onClose={() => setIsUpiCheckoutOpen(false)}
+        amount={grandTotal}
+        onPaid={(paymentTransactionId) => {
+          onPlaceOrder({
+            paymentMethod: 'upi',
+            scheduledTime: scheduledTime || undefined,
+            loyaltyPointsEarned: pointsToEarn,
+            paymentTransactionId
+          });
+        }}
+      />
 
       {/* 56h Top App Bar Header */}
       <div className="flex justify-between items-center h-[56px] mb-8">

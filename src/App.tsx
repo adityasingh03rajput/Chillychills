@@ -273,7 +273,7 @@ export default function App() {
       api.getUser(userId).then(setUser).catch(console.error);
     } catch (e) {
       // Rollback on error
-      toast.error('Order failed to reach kitchen');
+      toast.error((e as any)?.message || 'Order failed to reach kitchen');
       setOrders((prev: Order[]) => prev.filter(o => o.id !== newOrder.id));
       setCart(newOrder.items);
       setActiveTab('cart');
@@ -292,7 +292,7 @@ export default function App() {
       toast.success(`Vault Replenished: ₹${amount}`);
       return true;
     } catch (e) {
-      toast.error('Refill failed');
+      toast.error((e as any)?.message || 'Refill failed');
       return false;
     }
   };
@@ -387,7 +387,6 @@ export default function App() {
                     const orderToCancel = orders.find(o => o.id === id);
                     if (!orderToCancel) return;
 
-                    // Calculate Refundable vs Non-Refundable
                     const refundableAmount = orderToCancel.items.reduce((sum, item) => {
                       return sum + (item.isRefundable ? (item.price * item.quantity) : 0);
                     }, 0);
@@ -395,13 +394,12 @@ export default function App() {
                     const nonRefundableAmount = orderToCancel.totalAmount - refundableAmount;
                     const updates: any = { status: 'cancelled' };
 
-                    // If there's a non-refundable portion, request manager approval for THAT amount
                     if (nonRefundableAmount > 0) {
                       updates.refundRequest = {
                         status: 'pending',
                         reason: 'Non-refundable Item Cancellation',
                         requestedAt: Date.now(),
-                        refundAmount: nonRefundableAmount, // Only ask for the remainder
+                        refundAmount: nonRefundableAmount,
                         cancelledBy: 'user'
                       };
                       toast.info('Cancellation under review (Non-refundable items)');
@@ -409,33 +407,17 @@ export default function App() {
                       toast.success('Order Cancelled & Refunded');
                     }
 
-                    // Optimistic update
                     setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
 
                     try {
                       await api.updateOrder(id, updates);
                     } catch (error) {
-                      toast.error('Failed to cancel order');
-                      // Refresh to get correct state
+                      toast.error((error as any)?.message || 'Failed to cancel order');
                       const freshOrders = await api.getOrders().catch(() => []);
                       if (freshOrders.length) setOrders(freshOrders);
                     }
                   }}
-                  onSubmitFeedback={async (id, f: Feedback) => {
-                    // Optimistic update
-                    setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, feedback: f } : o));
-                    toast.success('Thanks for feedback!');
-
-                    try {
-                      await api.submitFeedback({ id, ...f });
-                    } catch (error) {
-                      toast.error('Failed to submit feedback');
-                      // Rollback
-                      setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, feedback: undefined } : o));
-                    }
-                  }}
                   onRequestRefund={async (id, r) => {
-                    // Optimistic update
                     const refundRequest = { status: 'pending' as const, reason: r, requestedAt: Date.now() };
                     setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, refundRequest } : o));
                     toast.success('Refund requested');
@@ -443,9 +425,19 @@ export default function App() {
                     try {
                       await api.updateOrder(id, { refundRequest });
                     } catch (error) {
-                      toast.error('Failed to request refund');
-                      // Rollback
+                      toast.error((error as any)?.message || 'Failed to request refund');
                       setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, refundRequest: undefined } : o));
+                    }
+                  }}
+                  onSubmitFeedback={async (id, f: Feedback) => {
+                    setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, feedback: f } : o));
+                    toast.success('Thanks for feedback!');
+
+                    try {
+                      await api.submitFeedback({ id, ...f });
+                    } catch (error) {
+                      toast.error((error as any)?.message || 'Failed to submit feedback');
+                      setOrders((prev: Order[]) => prev.map(o => o.id === id ? { ...o, feedback: undefined } : o));
                     }
                   }}
                 />
@@ -458,7 +450,6 @@ export default function App() {
                   orders={orders}
                   onLogout={handleLogout}
                   onUpdateStatus={async (id, s, reason) => {
-                    // Optimistic update - update UI immediately
                     setOrders(prevOrders =>
                       prevOrders.map(order =>
                         order.id === id
@@ -467,18 +458,14 @@ export default function App() {
                       )
                     );
 
-                    // Then make API call in background
                     try {
                       await api.updateOrder(id, {
                         status: s as any,
                         ...(reason && { rejectionReason: reason })
                       });
                     } catch (error) {
-                      // Rollback on error and show notification
                       console.error('Failed to update order status:', error);
-                      toast.error('Failed to update order status. Please try again.');
-
-                      // Refresh orders from server to get accurate state
+                      toast.error((error as any)?.message || 'Failed to update order status. Please try again.');
                       try {
                         const freshOrders = await api.getOrders();
                         if (freshOrders) setOrders(freshOrders);
@@ -498,52 +485,41 @@ export default function App() {
                   menu={menu}
                   onLogout={handleLogout}
                   onUpdateOrder={async (id, s) => {
-                    // Store previous state for rollback
                     const previousOrders = orders;
-
-                    // Optimistic update
                     setOrders(prev => prev.map(o => o.id === id ? { ...o, ...s } : o));
                     toast.success('System record updated');
 
                     try {
                       await api.updateOrder(id, s);
                     } catch (e) {
-                      toast.error('Failed to update record');
-                      // Rollback on error
+                      toast.error((e as any)?.message || 'Failed to update record');
                       setOrders(previousOrders);
                     }
                   }}
                   onUpdateMenu={async (id, updates) => {
-                    // Store previous state
                     const previousMenu = menu;
-
-                    // Optimistic update
                     setMenu(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
 
                     try {
                       await api.updateMenuItem(id, updates);
                       toast.success('Inventory updated');
                     } catch (e) {
-                      toast.error('Failed to sync inventory');
+                      toast.error((e as any)?.message || 'Failed to sync inventory');
                       setMenu(previousMenu);
                     }
                   }}
-                  onAddMenu={async (item) => {
-                    const tempId = Date.now().toString(); // temporary ID
+                  onAddMenu={async (item: any) => {
+                    const tempId = Date.now().toString();
                     const newItem = { ...item, id: tempId };
-
-                    // Optimistic update
                     setMenu((prev: MenuItem[]) => [newItem as MenuItem, ...prev]);
 
                     try {
                       const addedItem = await api.addMenuItem(item);
-                      // Replace temp item with real one (with correct ID)
                       setMenu((prev: MenuItem[]) => prev.map(m => m.id === tempId ? addedItem : m));
                       toast.success('Item added to Vault');
                     } catch (e) {
                       console.error(e);
-                      toast.error('Failed to add item');
-                      // Rollback
+                      toast.error((e as any)?.message || 'Failed to add item');
                       setMenu(prev => prev.filter(m => m.id !== tempId));
                     }
                   }}
@@ -553,7 +529,13 @@ export default function App() {
             )}
           </AnimatePresence>
         </div>
-        {role === 'student' && <Navbar activeTab={activeTab} onTabChange={setActiveTab} cartCount={cart.reduce((s, i) => s + i.quantity, 0)} />}
+        {role === 'student' && (
+          <Navbar
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
+          />
+        )}
       </Layout>
     </div>
   );

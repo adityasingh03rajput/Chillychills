@@ -433,7 +433,7 @@ export const FeedbackForm = ({ userId }: { userId: string }) => {
          toast.success('Feedback Sent');
          setText('');
       } catch (e) {
-         toast.error('Submit Failed');
+         toast.error((e as any)?.message || 'Submit Failed');
       } finally {
          setLoading(false);
       }

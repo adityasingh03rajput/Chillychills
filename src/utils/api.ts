@@ -175,9 +175,10 @@ export const api = {
 
   // --- Payment (Direct UPI) ---
   getPaymentDetails: () => request(`${BASE_URL}/payment/upi-details`),
-  verifyUTR: (utr: string, amount: number) => request(`${BASE_URL}/payment/verify-utr`, {
+  getPaymentSimulationStatus: () => request(`${BASE_URL}/payment/simulation-status`),
+  verifyUTR: (utr: string, amount: number, paymentMethod?: string) => request(`${BASE_URL}/payment/verify-utr`, {
     method: 'POST',
-    body: JSON.stringify({ utr, amount })
+    body: JSON.stringify({ utr, amount, paymentMethod })
   }),
   // --- Admin ---
   getAnnouncements: () => request(`${BASE_URL}/admin/announcements`),

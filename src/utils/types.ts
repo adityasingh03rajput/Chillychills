@@ -48,6 +48,7 @@ export interface Order {
   branch: string;
   createdAt: number;
   paymentMethod: 'upi' | 'wallet';
+  paymentTransactionId?: string;
   scheduledTime?: string; // HH:MM format
   loyaltyPointsEarned?: number;
   feedback?: Feedback;
